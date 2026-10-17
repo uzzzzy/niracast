@@ -20,9 +20,12 @@
 - **Schedule Overlap Check Bounded to ~60 Days**: Conflict validation between candidate slots and existing slots expands recurring occurrences within a ~60-day window from slot start; collisions beyond 60 days are not caught at insertion.
 - **XMLTV Slate Programmes in IPTV Apps (Unverified)**: XMLTV `<programme>` elements emitted for scheduled channel idle gaps ("Siaran Segera Kembali") may render oddly or appear as regular programmes in some third-party IPTV client apps.
 - **Scheduled Discontinuity Playback on Real Devices (Unverified)**: Scheduled playback transitions across idle<->programme HLS `#EXT-X-DISCONTINUITY` boundaries remain unverified on physical hardware / Smart TVs.
-- **Lazy Playout Lifecycle (Nothing Airs Without Viewers)**: Playout supervisor loops operate lazily on demand; without active viewer HLS manifest requests, channels remain idle and no stream is continuously broadcast.
-- **No Playout Analytics**: No concurrent viewer estimation, outbound bandwidth tracking, or historical audience metrics. Target: Future Plan F2 (`docs/ROADMAP.md`).
-- **Public HLS Links Unauthenticated & No Rate Limiting**: HLS manifest (`live.m3u8`) and segment (`.ts`) URLs are public with no access tokens, and routes lack rate limiting, allowing rapid manifest requests to keep or restart FFmpeg per channel. Media files and DB remain secure. Target: Future Plan F3 (`docs/ROADMAP.md`).
+- **Playout Analytics Estimation Limits & Verification (Delivered F2)**: Real-time playout analytics implemented on `feature/realtime-analytics`, with known operational limits:
+  - Viewer counts are estimates: inferred from HLS request patterns; clients behind the same NAT with identical User-Agent collapse into one, and caching can suppress requests (accuracy unverified with real clients).
+  - 10s viewer estimation window is separate and decoupled from the 60s `SessionManager` idle reaper.
+  - Bandwidth estimation: summed HTTP response bytes delivered by the Go server, unverified on the client side.
+  - No GeoIP: IP addresses are hashed with a daily salt and never stored; location/geographical analytics are not supported.
+  - Live end-to-end verification (multi-client load, FFmpeg kill/crash restart counting, SQLite row accumulation, 24h chart in real browser) not yet done.
 - **Live Stream Recording Not Prevented**: Live stream can be recorded or captured by viewers; casual deterrence only (AES-128, watermarking), and watermarking sacrifices zero-CPU copy mode. Priority: LOW (user decision). Target: Future Plan F4 (`docs/ROADMAP.md`).
 - **Admin Chunk Growth**: Admin chunk grew to 415kB raw / 126kB gzip because of the motion library (idea: `LazyMotion`/`m` components to shrink).
 - **Sonner Height Transition**: `sonner`'s own CSS transitions `height` (third-party, admin only).

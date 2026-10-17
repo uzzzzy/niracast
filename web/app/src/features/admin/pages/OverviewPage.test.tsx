@@ -197,4 +197,63 @@ describe('OverviewPage', () => {
     });
     expect(skipBtn).toBeDisabled();
   });
+
+  it('displays viewer count and restart badges from snapshot and SSE updates', async () => {
+    vi.spyOn(api, 'getChannels').mockResolvedValue([
+      { id: 1, number: 1, name: 'Main Channel', mode: 'loop', created_at: '2026-01-01' },
+    ]);
+
+    vi.spyOn(api, 'getSystemInfo').mockResolvedValue({
+      uptime_sec: 7200,
+      media_count: 10,
+      channel_count: 1,
+      running_channels: 1,
+      ffmpeg: { path: '/bin/ffmpeg', version: '6.1' },
+      idle_clip: { ready: true, size_bytes: 5000, modified_at: '2026-01-01' },
+    });
+
+    renderComponent();
+
+    expect(await screen.findByText('Main Channel')).toBeInTheDocument();
+
+    const es = MockEventSource.instances[0];
+    act(() => {
+      es.emit('snapshot', [
+        {
+          channel_id: 1,
+          state: 'playing',
+          item: null,
+          skip_offset_sec: 0,
+          viewers: 9,
+          restarts: 2,
+          last_error: 'ffmpeg exit 1',
+        },
+      ]);
+    });
+
+    const viewersBadge = await screen.findByTestId('channel-viewers-1');
+    expect(viewersBadge).toHaveTextContent('9');
+
+    const restartsBadge = await screen.findByTestId('channel-restarts-1');
+    expect(restartsBadge).toHaveTextContent('2');
+
+    // Update via viewers.update and channel.health
+    act(() => {
+      es.emit('viewers.update', {
+        type: 'viewers.update',
+        channel_id: 1,
+        data: { viewers: 14 },
+        time: '2026-01-01T12:00:00Z',
+      });
+      es.emit('channel.health', {
+        type: 'channel.health',
+        channel_id: 1,
+        data: { restarts: 3, last_error: 'transcode failure' },
+        time: '2026-01-01T12:00:00Z',
+      });
+    });
+
+    expect(await screen.findByText('14')).toBeInTheDocument();
+    expect(await screen.findByText('3')).toBeInTheDocument();
+  });
 });

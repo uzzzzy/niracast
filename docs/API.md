@@ -208,3 +208,104 @@ EPG responses include a `kind` discriminator on each item:
   ]
 }
 ```
+
+---
+
+## Analytics API
+
+Protected routes requiring authentication (`tvs_session` cookie).
+
+### 1. Live Analytics
+Retrieves total real-time viewers and channel-by-channel concurrency and playout health.
+
+```http
+GET /api/v1/analytics/live
+```
+
+#### Response (200 OK)
+```json
+{
+  "total_viewers": 12,
+  "channels": [
+    {
+      "channel_id": 1,
+      "viewers": 8,
+      "restarts": 0,
+      "last_error": ""
+    },
+    {
+      "channel_id": 2,
+      "viewers": 4,
+      "restarts": 1,
+      "last_error": "exit status 1"
+    }
+  ]
+}
+```
+
+---
+
+### 2. Timeseries Analytics
+Retrieves aggregated audience metrics (viewers peak, outbound bytes, watch time in seconds) across a time range.
+
+```http
+GET /api/v1/analytics/timeseries?range={1h|24h|7d|30d}&channel_id={id}
+```
+
+#### Query Parameters
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `range` | string | No | Aggregation window: `"1h"`, `"24h"`, `"7d"`, `"30d"`. Defaults to `"24h"`. |
+| `channel_id` | integer | No | Filter by specific channel ID. If omitted or 0, aggregates across all channels. |
+
+#### Response (200 OK)
+```json
+{
+  "range": "24h",
+  "points": [
+    {
+      "ts": "2026-10-18T12:00:00Z",
+      "viewers_peak": 10,
+      "bytes_out": 5242880,
+      "watch_sec": 600
+    }
+  ]
+}
+```
+
+---
+
+### 3. Top Media Analytics
+Retrieves top watched media items ranked by total watch time in seconds within the requested range.
+
+```http
+GET /api/v1/analytics/top-media?range={1h|24h|7d|30d}
+```
+
+#### Query Parameters
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `range` | string | No | Window duration: `"1h"`, `"24h"`, `"7d"`, `"30d"`. Defaults to `"24h"`. |
+
+#### Response (200 OK)
+```json
+{
+  "items": [
+    {
+      "media_id": 5,
+      "title": "news_bulletin",
+      "watch_sec": 3600
+    }
+  ]
+}
+```
+
+---
+
+### 4. Realtime SSE Events
+The event stream (`GET /api/v1/events`) emits viewer updates and channel health notifications:
+
+- `event: viewers.update`: Emitted every ~5 seconds. `channel_id: 0` represents total viewers across all channels, while `channel_id > 0` represents per-channel viewers. `data: {"viewers": N}`.
+- `event: channel.health`: Emitted when restart count increments or process fails. `data: {"restarts": N, "last_error": "..."}`.
+- `event: snapshot`: Initial SSE snapshot includes `viewers`, `restarts`, and `last_error` on each channel status item.
+

@@ -292,6 +292,9 @@ func TestAccessMatrix(t *testing.T) {
 		{"Channel schedule slots POST", http.MethodPost, "/api/v1/channels/123/schedule/slots", false},
 		{"Channel schedule slot PUT", http.MethodPut, "/api/v1/channels/123/schedule/slots/1", false},
 		{"Channel schedule slot DELETE", http.MethodDelete, "/api/v1/channels/123/schedule/slots/1", false},
+		{"Analytics live GET", http.MethodGet, "/api/v1/analytics/live", false},
+		{"Analytics timeseries GET", http.MethodGet, "/api/v1/analytics/timeseries", false},
+		{"Analytics top-media GET", http.MethodGet, "/api/v1/analytics/top-media", false},
 		{"Unknown API route GET", http.MethodGet, "/api/v1/unknown", false},
 	}
 

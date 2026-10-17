@@ -12,6 +12,7 @@ import (
 	"time"
 	_ "time/tzdata"
 
+	"tv-stream/internal/analytics"
 	"tv-stream/internal/api"
 	"tv-stream/internal/auth"
 	"tv-stream/internal/db"
@@ -47,6 +48,10 @@ func main() {
 		log.Fatalf("init db: %v", err)
 	}
 	defer conn.Close()
+
+	tracker := analytics.NewTracker()
+	flusher := analytics.NewFlusher(conn, tracker)
+	defer flusher.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -100,8 +105,45 @@ func main() {
 		return mode, nil
 	})
 
+	tracker.SetMediaLookup(func(channelID int64) int64 {
+		st := supervisor.Status(channelID)
+		if st.State == "playing" {
+			return st.MediaID
+		}
+		return 0
+	})
+
 	hub := events.NewHub()
 	supervisor.SetPublisher(hub)
+
+	// Publish live viewer count updates periodically (~5s).
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				tot := tracker.TotalViewers()
+				hub.Publish(events.Event{
+					Type:      "viewers.update",
+					ChannelID: 0,
+					Data:      map[string]any{"viewers": tot},
+					Time:      time.Now(),
+				})
+				for _, st := range supervisor.RunningStatuses() {
+					v := tracker.ChannelViewers(st.ChannelID)
+					hub.Publish(events.Event{
+						Type:      "viewers.update",
+						ChannelID: st.ChannelID,
+						Data:      map[string]any{"viewers": v},
+						Time:      time.Now(),
+					})
+				}
+			}
+		}
+	}()
 
 	hls := &hlsHandler{
 		ctx:        ctx,
@@ -110,10 +152,11 @@ func main() {
 		ctrl:       ctrl,
 		sessions:   sessions,
 		supervisor: supervisor,
+		tracker:    tracker,
 		root:       transcodeDir + "/channels",
 	}
 
-	statusH := newStatusHandler(conn, supervisor, hub)
+	statusH := newStatusHandler(conn, supervisor, hub, tracker)
 	epgH := newEPGHandler(conn, supervisor, calc)
 	systemH := newSystemHandler(conn, supervisor, mediaScanner, startTime, ffmpegPath, idleClip, tzName)
 
@@ -140,6 +183,7 @@ func main() {
 	mux := http.NewServeMux()
 	api.NewChannelHandler(conn, supervisor).Register(mux)
 	api.NewScheduleHandler(conn, supervisor, loc).Register(mux)
+	api.NewAnalyticsHandler(conn, tracker, supervisor).Register(mux)
 	feed.NewHandler(conn, calc).Register(mux)
 	authHandler.Register(mux)
 	statusH.register(mux)

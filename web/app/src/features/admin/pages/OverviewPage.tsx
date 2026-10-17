@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Copy, ExternalLink, Loader2, SkipForward } from 'lucide-react';
+import { Check, Copy, ExternalLink, Loader2, RotateCcw, SkipForward, Users } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -97,8 +97,30 @@ function ChannelMonitorCard({
             #{channel.number}
           </span>
 
-          {/* StatusPill top-right */}
-          <div className="absolute top-2.5 right-2.5">
+          {/* Badges top-right: restarts, viewers, and playout status */}
+          <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 flex-wrap justify-end">
+            {(status?.restarts ?? 0) > 0 && (
+              <span
+                data-testid={`channel-restarts-${channel.id}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger/25 text-danger border border-danger/40 select-none shadow-sm"
+                title={
+                  status?.last_error
+                    ? `${status.restarts} restarts: ${status.last_error}`
+                    : `${status?.restarts} restarts`
+                }
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>{status?.restarts}</span>
+              </span>
+            )}
+            <span
+              data-testid={`channel-viewers-${channel.id}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-0/85 text-fg border border-hairline select-none font-mono shadow-sm"
+              title={`${status?.viewers ?? 0} ${t('viewers_count')}`}
+            >
+              <Users className="h-3 w-3 text-live" />
+              <span>{status?.viewers ?? 0}</span>
+            </span>
             {state === 'playing' ? (
               <StatusPill status="onair">{t('badge_playing')}</StatusPill>
             ) : state === 'idle' ? (

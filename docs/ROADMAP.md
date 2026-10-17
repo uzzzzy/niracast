@@ -63,11 +63,12 @@
 | 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | **DONE**: Mobile profile detection (`?ui=mobile`), pure swipe gesture engine, bottom sheets for channels and EPG, mobile admin navigation bar, responsive stacked tables, and touch drag sensor for playlist reordering verified. All roadmap phases 1-8 complete. |
 | — | UI revamp: Control Room Glass | "Control Room Glass" design system (`docs/DESIGN.md`): semantic tokens, Apple-style materials, dark/light themes, shared UI primitives (`web/app/src/components/ui/`), desktop glass blur with solid fallbacks, WebP assets, server idle frame update, and bundle chunk isolation. | **DONE**: Design system fully implemented; semantic tokens, dark/light themes with pre-paint script (`theme.ts`), shared UI primitives, desktop blur with solid fallbacks, 13 WebP assets, server idle frame rebuilt, token guards, timecode formatter, and Vite bundle isolation (pinned `hls.js`) verified across test suites (205 tests) and real browser checks. |
 | F1 | `feature/scheduled-broadcast` | Scheduled TV broadcast programming (`loop` vs `scheduled`), slot expansion with daily/weekly recurrence in server timezone, idle slate fallback in gaps, XMLTV/M3U EPG feed generation, and visual planner. | **DONE**: Channel plays scheduled media on clock time and idle slate in gaps without manual intervention; recurrence, conflict detection (409), EPG/XMLTV, and timeline planner verified. |
+| F2 | `feature/realtime-analytics` | Real-time playout & audience metrics: HLS request observation, sliding 10s viewer estimation, SQLite minute/daily retention, supervisor restart/health monitoring, protected analytics APIs, SSE live events, and SVG charts CMS analytics dashboard. | **DONE-pending-live-verification**: Backend analytics engine, flusher, rollups, API routes, SSE events, and responsive SVG charts dashboard implemented and unit/type-test verified; live end-to-end verification (multi-client, FFmpeg kill, SQLite rows, real browser 24h chart) pending. |
 
 
 ## Future Plan (not yet scheduled)
 
-**Priority overview**: F3 normal (before any public/internet exposure), F2 next (playout & audience metrics), F4 low (explicitly deprioritised).
+**Priority overview**: F1 and F2 delivered (F2 pending live verification), F3 normal (before any public/internet exposure), F4 low (explicitly deprioritised).
 
 ### F1: Scheduled broadcast (TV-style programming) — DELIVERED
 - **Status**: **DELIVERED (2026-10-17)** on branch `feature/scheduled-broadcast`.
@@ -84,7 +85,14 @@
 - **Risks / Unverified**: Timezone/DST edge cases; items whose real duration differs from scheduled slot (truncate or fill with idle); schema migration needed (add a migration runner then).
 - **Done criterion**: A channel plays programme A at 19:00 and slate in gaps without manual action, EPG matches.
 
-### F2: Realtime analytics
+### F2: Realtime analytics — DELIVERED (pending live verification)
+- **Status**: **DELIVERED-pending-live-verification (2026-10-17)** on branch `feature/realtime-analytics`.
+- **Delivered Summary**: Implemented end-to-end playout analytics backend and frontend:
+  - **Request Tracking & Privacy**: `internal/analytics/Tracker` monitors HLS manifest and segment hits with daily-salted `SHA-256(daily_salt + ip + ua)` client hash (zero raw IP/PII storage, daily rotation). Active viewer concurrency estimated via 10s sliding window. Outbound bandwidth tracked via HTTP response byte-counting middleware (`countingResponseWriter`).
+  - **Persistence & Retention**: Added SQLite tables `analytics_minute` (with 30-day retention) and `analytics_daily` (with 1-year retention). `Flusher` commits batched minute increments with `ON CONFLICT` updates; hourly worker executes daily rollups and retention pruning.
+  - **Supervisor Health**: Playout supervisor tracks process restart counts and last error state across exits, failures, and loop rollovers; broadcasts `channel.health` SSE events.
+  - **API & SSE Broadcasts**: Registered protected endpoints `GET /api/v1/analytics/live`, `GET /api/v1/analytics/timeseries` (`1h`, `24h`, `7d`, `30d`), and `GET /api/v1/analytics/top-media`. Wired ~5s periodic `viewers.update` SSE broadcast and enriched channel status/snapshot with viewer and restart counts.
+  - **CMS Frontend**: Created zero-dependency responsive SVG `AreaChart` (gradient fill, grid lines, hover scrub tooltip) and `BarChart` (horizontal ranked bars). Mounted `/admin/analytics` dashboard in admin shell with Bento KPI tiles (current viewers, peak viewers, total bandwidth, watch time), timeseries charts, top media rankings, and playout health table. Enriched Overview channel cards with real-time viewer and restart badges. Full id/en localization.
 - **Goal**: Provide real-time playout and audience metrics for operational monitoring.
 - **Scope**:
   - Live concurrency: concurrent viewers per channel and total, shown live in the CMS monitor via the existing SSE hub (`internal/events`).
@@ -94,7 +102,7 @@
   - Viewer counting model: inferred from HLS request patterns (a client counts as active if it requested a manifest or segment within the last ~10 s; client id = daily-salted hash of IP+User-Agent), so numbers are estimates, not exact; players behind one NAT with the same UA collapse into one.
   - Privacy: no raw IPs stored, hashes rotate daily, no PII, no GeoIP in the first version.
 - **Dependencies**: Phase 5 for the UI; the existing `SessionManager` activity pings and events hub.
-- **Risks / Unverified**: Viewer counting accuracy under NAT and caching (UNVERIFIED accuracy, must be measured with real clients).
+- **Risks / Unverified**: Viewer counting accuracy under NAT and caching (UNVERIFIED accuracy, must be measured with real clients); live end-to-end verification across real browsers, multi-client loads, and FFmpeg crashes pending.
 - **Done criterion**: CMS shows live viewer counts per channel within ~5 s and a 24 h history chart.
 
 ### F3: Public link security and request-flood protection

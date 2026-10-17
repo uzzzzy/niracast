@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"tv-stream/internal/analytics"
 	"tv-stream/internal/events"
 	"tv-stream/internal/stream"
 )
@@ -28,19 +29,28 @@ type channelStatusResponse struct {
 	State         string              `json:"state"`
 	Item          *statusItemResponse `json:"item"`
 	SkipOffsetSec float64             `json:"skip_offset_sec"`
+	Viewers       int                 `json:"viewers"`
+	Restarts      int                 `json:"restarts"`
+	LastError     string              `json:"last_error,omitempty"`
 }
 
 type statusHandler struct {
 	db         *sql.DB
 	supervisor *stream.Supervisor
 	hub        *events.Hub
+	tracker    *analytics.Tracker
 }
 
-func newStatusHandler(db *sql.DB, supervisor *stream.Supervisor, hub *events.Hub) *statusHandler {
+func newStatusHandler(db *sql.DB, supervisor *stream.Supervisor, hub *events.Hub, trackers ...*analytics.Tracker) *statusHandler {
+	var tr *analytics.Tracker
+	if len(trackers) > 0 {
+		tr = trackers[0]
+	}
 	return &statusHandler{
 		db:         db,
 		supervisor: supervisor,
 		hub:        hub,
+		tracker:    tr,
 	}
 }
 
@@ -57,10 +67,17 @@ func (h *statusHandler) channelExists(id int64) bool {
 }
 
 func (h *statusHandler) buildResponse(cs stream.ChannelStatus) channelStatusResponse {
+	viewers := 0
+	if h.tracker != nil {
+		viewers = h.tracker.ChannelViewers(cs.ChannelID)
+	}
 	resp := channelStatusResponse{
 		ChannelID:     cs.ChannelID,
 		State:         cs.State,
 		SkipOffsetSec: cs.SkipOffsetSec,
+		Viewers:       viewers,
+		Restarts:      cs.Restarts,
+		LastError:     cs.LastError,
 	}
 
 	if cs.State == "playing" && cs.MediaID > 0 {

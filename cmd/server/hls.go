@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"tv-stream/internal/analytics"
 	"tv-stream/internal/ingest"
 	"tv-stream/internal/stream"
 	"tv-stream/internal/timeline"
@@ -24,12 +25,18 @@ type hlsHandler struct {
 	ctrl       stream.ProcessController
 	sessions   *stream.SessionManager
 	supervisor *stream.Supervisor
+	tracker    *analytics.Tracker
 	root       string
 }
 
 func (h *hlsHandler) register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /channels/{id}/live.m3u8", h.manifest)
-	mux.HandleFunc("GET /channels/{id}/{file}", h.segment)
+	if h.tracker != nil {
+		mux.Handle("GET /channels/{id}/live.m3u8", h.tracker.WrapHLS(http.HandlerFunc(h.manifest)))
+		mux.Handle("GET /channels/{id}/{file}", h.tracker.WrapHLS(http.HandlerFunc(h.segment)))
+	} else {
+		mux.HandleFunc("GET /channels/{id}/live.m3u8", h.manifest)
+		mux.HandleFunc("GET /channels/{id}/{file}", h.segment)
+	}
 }
 
 func (h *hlsHandler) dir(id int64) string { return filepath.Join(h.root, strconv.FormatInt(id, 10)) }
