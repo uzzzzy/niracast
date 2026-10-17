@@ -3,7 +3,7 @@ package stream
 import (
 	"strings"
 
-	"tv-stream/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/ingest"
 )
 
 // PipelineProfile describes how the source should be handled by ffmpeg.

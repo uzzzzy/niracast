@@ -1,8 +1,46 @@
 # Known Gaps & Technical Debt
 
-- **Continuous Stream Roll**: FFmpeg stops at the end of a single media file; the stream does not automatically roll over to the next playlist item without a new client request (requires a continuous supervisor).
-- **Filler Video Wiring**: The fallback filler asset `assets/filler/siaran_segera_kembali.mp4` does not exist on disk, and `FillerPolicy` is not yet wired into the HTTP server.
-- **Empty Playlist Handling**: Requesting stream manifests on an empty playlist returns HTTP 404.
-- **M3U Host Header**: IPTV M3U stream URL generation dynamically derives host from `r.Host`.
-- **Browser Testing**: The web player has not been verified in a real browser environment (relies on `hls.js` fetched from CDN).
-- **Image Size**: The current Docker production image is ~209MB.
+- **M3U Host Header**: IPTV M3U stream URL generation dynamically derives host from `r.Host`. Target: network and reverse-proxy hardening.
+- **Browser Testing**: Verified on desktop Chromium browser in Phase 4 (1280x720 HLS playback, HUD, channel drawer, guide sheet, idle card). Unverified on Safari, iOS, and Smart TV browsers.
+- **Docker Image Size**: The current Docker production image is 211MB with multi-stage Node build and embedded SPA assets.
+- **Discontinuity Across Clients (Unverified)**: Safari and Smart TV client stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode/copy switches.
+- **Playout Boundary Edge Case (Unverified)**: When a playlist item resolves with <1s remaining time, supervisor may restart the same file instead of cleanly rolling to the next item.
+- **Skip Offset Volatility & Mismatch (Loop Mode Only)**: Playout skip offset is stored in-memory only and lost on restart. Metadata offset mismatch now only applies to `loop` mode; `scheduled` mode channels disallow skip (returning HTTP 409 Conflict `skip_unavailable`).
+- **SSE Reconnect Under Long Downtime (Unverified)**: Real browser SSE connection verified for Overview live monitor, but reconnection behavior under extended server downtime remains unverified.
+- **Database Migration Runner Still Absent**: Schema version 2 is tracked via `PRAGMA user_version = 2` and outdated v0 databases with existing channels are rejected on startup (dev DB was reset). An automated schema migration runner is still absent.
+- **First Manifest Wait in Copy Mode**: First manifest generation wait equals the source GOP length for copy mode (`sample.mp4` with 10s keyframes took ~9s, while real movies take 2.5–5s).
+- **Frontend Bundle Size**: Admin chunk is 274kB raw / 79kB gzip (includes `@dnd-kit` and `sonner` in the lazy admin chunk); `hls` chunk remains 574kB raw / 179kB gzip in full build.
+- **Admin Dialogs & Subpages Manual Testing**: Channels create/edit/delete dialogs and media/system pages verified only by unit tests (not clicked manually in browser run; Overview, login, skip button, and playlist drag-and-drop were verified in real browser).
+- **Title Display Inconsistency**: 'NOW PLAYING' in the HUD overlay displays the raw filename with extension (`sample.mp4`), whereas the EPG program guide displays parsed titles without file extensions.
+- **Keyboard Shortcut Emulation (Unverified)**: Browser-pane key emulation made keyboard shortcuts unverifiable manually.
+- **Viewer Playout Polling**: The viewer page does not consume Server-Sent Events (`GET /api/v1/events`); instead, it polls `/api/v1/channels/{id}/status` every 5s and `/api/v1/channels/{id}/epg` every 15s.
+- **Conditional Frontend Pre-commit**: Pre-commit hook runs `pnpm check` and `pnpm typecheck` only when `web/app/node_modules` exists.
+- **Clock-Time Scheduling (Delivered F1)**: Delivered in `feature/scheduled-broadcast` with dual modes (`loop` | `scheduled`), recurrence expansion, idle gap filling, and CMS visual planner.
+- **Planner Timeline Now-Line Static Between Renders**: The current-time indicator line on the CMS schedule timeline is computed per component render and does not tick live in real time.
+- **Schedule Overlap Check Bounded to ~60 Days**: Conflict validation between candidate slots and existing slots expands recurring occurrences within a ~60-day window from slot start; collisions beyond 60 days are not caught at insertion.
+- **XMLTV Slate Programmes in IPTV Apps (Unverified)**: XMLTV `<programme>` elements emitted for scheduled channel idle gaps ("Siaran Segera Kembali") may render oddly or appear as regular programmes in some third-party IPTV client apps.
+- **Scheduled Discontinuity Playback on Real Devices (Unverified)**: Scheduled playback transitions across idle<->programme HLS `#EXT-X-DISCONTINUITY` boundaries remain unverified on physical hardware / Smart TVs.
+- **Playout Analytics Estimation Limits & Verification (Delivered F2)**: Real-time playout analytics implemented on `feature/realtime-analytics`, with known operational limits:
+  - Viewer counts are estimates: inferred from HLS request patterns; clients behind the same NAT with identical User-Agent collapse into one, and caching can suppress requests (accuracy unverified with real clients).
+  - 10s viewer estimation window is separate and decoupled from the 60s `SessionManager` idle reaper.
+  - Bandwidth estimation: summed HTTP response bytes delivered by the Go server, unverified on the client side.
+  - No GeoIP: IP addresses are hashed with a daily salt and never stored; location/geographical analytics are not supported.
+  - Live end-to-end verification (multi-client load, FFmpeg kill/crash restart counting, SQLite row accumulation, 24h chart in real browser) not yet done.
+- **Live Stream Recording Not Prevented**: Live stream can be recorded or captured by viewers; casual deterrence only (AES-128, watermarking), and watermarking sacrifices zero-CPU copy mode. Priority: LOW (user decision). Target: Future Plan F4 (`docs/ROADMAP.md`).
+- **Admin Chunk Growth**: Admin chunk grew to 415kB raw / 126kB gzip because of the motion library (idea: `LazyMotion`/`m` components to shrink).
+- **Sonner Height Transition**: `sonner`'s own CSS transitions `height` (third-party, admin only).
+- **Volume Reset on Channel Switch (Fixed)**: Volume level and mute state now persist across channel switches and page reloads via `volumePersistence.ts` in `localStorage` (`niracast_volume`, `niracast_muted`).
+- **TV Profile Detection, Remote Key Map, Spatial Nav (Fixed)**: Smart TV profile detection (`device.ts`), remote key normalization (`remoteKeys.ts`), and zero-dependency spatial navigation (`spatialNav.ts`) are implemented and verified in tests and simulation.
+- **Motion Performance & Browser Compatibility (Unverified)**: FPS under 4x CPU throttle and Safari/TV behaviour unverified.
+- **Smart TV Keycodes & Browser Performance (Unverified)**: Real physical Tizen and webOS device keycode reception, input latency, and low-end TV browser performance remain unverified on hardware (tested via emulation and test suites).
+- **Stray Digit Overlay Transient Glitch (Not Reproduced / Closed)**: The earlier transient glitch ('# 6 / CHANNEL 6' after ArrowLeft x2 + Enter via browser automation) was investigated and not reproduced during Phase 8 testing.
+- **Mobile Device Behavior & Haptics (Unverified)**: Real physical iOS Safari and Android Chrome touch gesture performance, native haptics (`navigator.vibrate`), and orientation change jitter/aspect ratio resizing during active live HLS playback remain unverified on physical hardware (verified in test suites and responsive viewport emulations down to 320px).
+- **Origin-wide `?ui=` Override Persistence**: The `?ui=` query parameter override is persisted in `localStorage` under key `'ui'` per origin. Consequently, a desktop browser navigated to `?ui=mobile` or `?ui=tv` will stay in mobile/tv mode across page visits until explicitly cleared or overridden via `?ui=desktop`.
+- **AmbientBackground Wallpaper Preload Overhead**: `AmbientBackground` renders four `<img>` tags hidden via CSS, causing all four wallpapers (~82 KB) to download regardless of active theme or screen orientation.
+- **Desktop GPU Blur Performance (Unmeasured)**: Performance overhead of real `backdrop-filter` blur on low-end desktop GPUs has not been measured.
+- **`prefers-reduced-transparency` Browser Support**: CSS media query support for `prefers-reduced-transparency` varies across browsers.
+- **Physical Device Validation (Unverified)**: UI revamp verified via desktop browser and responsive emulation; not tested on physical Smart TVs or mobile phones.
+- **Idle Image Font Licensing**: Server idle frame (`assets/filler/siaran_segera_kembali.jpg`) text was rendered with the Windows Segoe UI font; confirm font licensing if distributed beyond this project.
+- **LLM Quota Fallback During Development**: agy claude-sonnet-4-6 quota was exhausted during the revamp work; workers ran on gemini-3.8-flash-high.
+
+

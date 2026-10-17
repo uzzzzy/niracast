@@ -1,19 +1,32 @@
 # syntax=docker/dockerfile:1
+FROM node:22-alpine AS web
+RUN corepack enable
+WORKDIR /web/app
+COPY web/app/package.json web/app/pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY web/app ./
+RUN pnpm build
+
 FROM golang:1.27-alpine AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/tv-stream ./cmd/server
+COPY --from=web /web/app/dist/app ./web/app/dist/app
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /app/niracast ./cmd/server
 
 FROM alpine:3.21
 RUN apk add --no-cache ffmpeg ca-certificates tzdata \
     && addgroup -S app && adduser -S -G app app \
-    && mkdir -p /app /data /transcode /media \
+    && mkdir -p /app /data /data/idle /transcode /media \
     && chown -R app:app /app /data /transcode /media
 WORKDIR /app
-COPY --from=builder --chown=app:app /app/tv-stream /app/tv-stream
+COPY --from=builder --chown=app:app /app/niracast /app/niracast
 COPY --chown=app:app web/static /app/web/static
+# Idle stream filler assets: the JPEG is encoded into idle.mp4 at startup.
+COPY --chown=app:app assets/filler /app/assets/filler
 USER app
 VOLUME ["/data", "/transcode", "/media"]
-ENTRYPOINT ["/app/tv-stream"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1
+ENTRYPOINT ["/app/niracast"]

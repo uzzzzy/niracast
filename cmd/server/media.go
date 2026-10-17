@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"tv-stream/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/ingest"
 )
 
-// scanLoop indexes the media directory now and then every interval.
-func scanLoop(ctx context.Context, conn *sql.DB, mediaDir string, interval time.Duration) {
-	scanOnce(conn, mediaDir)
+// scanLoop indexes the media directory now and then every interval using the MediaScanner guard.
+func scanLoop(ctx context.Context, scanner *MediaScanner, interval time.Duration) {
+	scanner.StartScan()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -22,16 +22,16 @@ func scanLoop(ctx context.Context, conn *sql.DB, mediaDir string, interval time.
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			scanOnce(conn, mediaDir)
+			scanner.StartScan()
 		}
 	}
 }
 
-func scanOnce(conn *sql.DB, mediaDir string) {
+func scanOnce(conn *sql.DB, mediaDir string) error {
 	paths, err := ingest.NewScanner(mediaDir).Scan()
 	if err != nil {
 		log.Printf("scan %s: %v", mediaDir, err)
-		return
+		return err
 	}
 	for _, p := range paths {
 		var id int64
@@ -51,6 +51,7 @@ func scanOnce(conn *sql.DB, mediaDir string) {
 			log.Printf("insert %s: %v", p, err)
 		}
 	}
+	return nil
 }
 
 func listMedia(conn *sql.DB) http.HandlerFunc {
@@ -59,9 +60,13 @@ func listMedia(conn *sql.DB) http.HandlerFunc {
 		Path        string  `json:"path"`
 		Filename    string  `json:"filename"`
 		DurationSec float64 `json:"duration_sec"`
+		CodecVideo  string  `json:"codec_video"`
+		CodecAudio  string  `json:"codec_audio"`
+		Width       int     `json:"width"`
+		Height      int     `json:"height"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		rows, err := conn.Query(`SELECT id, path, filename, duration_sec FROM media_files ORDER BY filename`)
+		rows, err := conn.Query(`SELECT id, path, filename, duration_sec, codec_video, codec_audio, width, height FROM media_files ORDER BY filename`)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -70,12 +75,19 @@ func listMedia(conn *sql.DB) http.HandlerFunc {
 		out := []item{}
 		for rows.Next() {
 			var it item
-			var fn sql.NullString
-			if err := rows.Scan(&it.ID, &it.Path, &fn, &it.DurationSec); err != nil {
+			var fn, cv, ca sql.NullString
+			var dur sql.NullFloat64
+			var widthVal, heightVal sql.NullInt64
+			if err := rows.Scan(&it.ID, &it.Path, &fn, &dur, &cv, &ca, &widthVal, &heightVal); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			it.Filename = fn.String
+			it.DurationSec = dur.Float64
+			it.CodecVideo = cv.String
+			it.CodecAudio = ca.String
+			it.Width = int(widthVal.Int64)
+			it.Height = int(heightVal.Int64)
 			out = append(out, it)
 		}
 		w.Header().Set("Content-Type", "application/json")

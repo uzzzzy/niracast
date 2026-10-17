@@ -3,15 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TV Stream Dashboard</title>
+<title>Niracast Dashboard</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header class="bar">
-  <h1>TV Stream</h1>
+  <h1>Niracast</h1>
   <div class="actions">
     <button id="copy-m3u" class="btn">Copy M3U URL</button>
     <button id="add-btn" class="btn primary">+ Add channel</button>
+    <button id="logout-btn" class="btn" hidden>Logout</button>
   </div>
 </header>
 <main>
@@ -22,6 +23,17 @@
   </table>
   <p id="empty" class="empty" hidden>No channels yet.</p>
 </main>
+
+<dialog id="login-modal">
+  <form id="login-form" method="dialog">
+    <h2>Admin Login</h2>
+    <p id="login-msg" class="msg" role="status"></p>
+    <label>Password <input name="password" id="login-password" type="password" required></label>
+    <div class="actions">
+      <button type="submit" class="btn primary">Login</button>
+    </div>
+  </form>
+</dialog>
 
 <dialog id="modal">
   <form id="form" method="dialog">

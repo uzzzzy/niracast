@@ -1,15 +1,18 @@
 services:
-  tv-stream:
+  niracast:
     build: .
-    image: tv-stream:latest
-    container_name: tv-stream
+    image: niracast:latest
+    container_name: niracast
     restart: unless-stopped
     ports:
       - "${PORT:-8080}:8080"
     environment:
-      DB_PATH: /data/tv-stream.db
+      DB_PATH: /data/niracast.db
+      TIMEZONE: ${TIMEZONE:-UTC}
       MEDIA_DIR: /media
       TRANSCODE_DIR: /transcode
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
     volumes:
       - ${MEDIA_PATH:-./media}:/media:ro
       - ./data:/data

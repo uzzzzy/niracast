@@ -1,0 +1,697 @@
+@import "tailwindcss";
+
+/*
+ * Motion Design Tokens & Variables
+ * Kept in sync with `src/lib/motion/tokens.ts`:
+ *   DURATION = { fast: 0.12, normal: 0.24, slow: 0.35 } (in seconds)
+ *   EASE = { spring: [0.16, 1, 0.3, 1] }
+ */
+:root {
+  color-scheme: dark;
+  --surface-0: #07080a;
+  --surface-1: #111215;
+  --surface-2: #18191d;
+  --surface-3: #222328;
+  --fg: #f5f5f7;
+  --fg-muted: #a1a1a6;
+  --fg-subtle: #6e6e73;
+  --hairline: rgb(255 255 255 / 0.09);
+  --hairline-strong: rgb(255 255 255 / 0.16);
+  --accent: #0a84ff;
+  --accent-soft: rgb(10 132 255 / 0.18);
+  --live: #30d158;
+  --onair: #ff453a;
+  --idle: #ff9f0a;
+  --danger: #ff453a;
+  --mat-ultrathin: rgb(30 31 36 / 0.34);
+  --mat-thin: rgb(28 29 34 / 0.5);
+  --mat-regular: rgb(24 25 30 / 0.64);
+  --mat-thick: rgb(20 21 25 / 0.8);
+  --mat-hud: rgb(14 15 18 / 0.52);
+  --mat-fallback: rgb(22 23 27 / 0.97);
+  --card: rgb(17 18 21 / 0.72);
+  --specular: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 30px -12px rgb(0 0 0 / 0.55);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.35), 0 30px 80px -20px rgb(0 0 0 / 0.7);
+
+  --blur-thin: 18px;
+  --blur-regular: 30px;
+  --blur-thick: 44px;
+  --blur-hud: 24px;
+
+  --font-system:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", Inter,
+    system-ui, sans-serif;
+
+  --dur-fast: 120ms;
+  --dur-normal: 240ms;
+  --dur-slow: 350ms;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+
+  /* Compatibility aliases */
+  --bg-primary: var(--surface-0);
+  --bg-secondary: var(--surface-1);
+  --bg-tertiary: var(--surface-2);
+  --text-primary: var(--fg);
+  --text-secondary: var(--fg-muted);
+  --border: var(--hairline);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --surface-0: #f2f2f5;
+  --surface-1: #ffffff;
+  --surface-2: #f7f7f9;
+  --surface-3: #e9e9ee;
+  --fg: #1d1d1f;
+  --fg-muted: #6e6e73;
+  --fg-subtle: #8e8e93;
+  --hairline: rgb(0 0 0 / 0.08);
+  --hairline-strong: rgb(0 0 0 / 0.14);
+  --accent: #007aff;
+  --accent-soft: rgb(0 122 255 / 0.12);
+  --live: #248a3d;
+  --onair: #ff3b30;
+  --idle: #c45500;
+  --danger: #d70015;
+  --mat-ultrathin: rgb(255 255 255 / 0.45);
+  --mat-thin: rgb(255 255 255 / 0.6);
+  --mat-regular: rgb(255 255 255 / 0.72);
+  --mat-thick: rgb(250 250 252 / 0.86);
+  --mat-hud: rgb(14 15 18 / 0.52);
+  --mat-fallback: rgb(252 252 253 / 0.97);
+  --card: rgb(255 255 255 / 0.78);
+  --specular: inset 0 1px 0 rgb(255 255 255 / 0.8);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.05), 0 10px 30px -12px rgb(0 0 0 / 0.14);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.06), 0 30px 80px -20px rgb(0 0 0 / 0.22);
+}
+
+.scheme-dark {
+  color-scheme: dark;
+  --surface-0: #07080a;
+  --surface-1: #111215;
+  --surface-2: #18191d;
+  --surface-3: #222328;
+  --fg: #f5f5f7;
+  --fg-muted: #a1a1a6;
+  --fg-subtle: #6e6e73;
+  --hairline: rgb(255 255 255 / 0.09);
+  --hairline-strong: rgb(255 255 255 / 0.16);
+  --accent: #0a84ff;
+  --accent-soft: rgb(10 132 255 / 0.18);
+  --live: #30d158;
+  --onair: #ff453a;
+  --idle: #ff9f0a;
+  --danger: #ff453a;
+  --mat-ultrathin: rgb(30 31 36 / 0.34);
+  --mat-thin: rgb(28 29 34 / 0.5);
+  --mat-regular: rgb(24 25 30 / 0.64);
+  --mat-thick: rgb(20 21 25 / 0.8);
+  --mat-hud: rgb(14 15 18 / 0.52);
+  --mat-fallback: rgb(22 23 27 / 0.97);
+  --card: rgb(17 18 21 / 0.72);
+  --specular: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.35), 0 10px 30px -12px rgb(0 0 0 / 0.55);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.35), 0 30px 80px -20px rgb(0 0 0 / 0.7);
+}
+
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-live: var(--live);
+  --color-onair: var(--onair);
+  --color-idle: var(--idle);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-system);
+}
+
+/* Non-inline theme values: emitted as real custom properties on :root */
+@theme {
+  --radius-control: 10px;
+  --radius-tile: 14px;
+  --radius-card: 20px;
+  --radius-sheet: 28px;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Segoe UI Mono", Menlo, monospace;
+}
+
+@custom-variant tv (html[data-ui="tv"] &);
+@custom-variant mobile (html[data-ui="mobile"] &);
+@custom-variant light (html[data-theme="light"] &);
+
+/*
+ * Material classes live in the components layer so Tailwind utilities
+ * (rounded-*, border-*, shadow-*, bg-*) on the same element can override them.
+ */
+@layer components {
+  .glass-ultrathin {
+    background-color: var(--mat-ultrathin);
+    background-image: var(--noise);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(180%);
+    backdrop-filter: blur(var(--blur-thin)) saturate(180%);
+  }
+
+  .glass-thin {
+    background-color: var(--mat-thin);
+    background-image: var(--noise);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(180%);
+    backdrop-filter: blur(var(--blur-thin)) saturate(180%);
+  }
+
+  .glass {
+    background-color: var(--mat-regular);
+    background-image: var(--noise);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+    -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(180%);
+    backdrop-filter: blur(var(--blur-regular)) saturate(180%);
+  }
+
+  .glass-thick {
+    background-color: var(--mat-thick);
+    background-image: var(--noise);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+    -webkit-backdrop-filter: blur(var(--blur-thick)) saturate(180%);
+    backdrop-filter: blur(var(--blur-thick)) saturate(180%);
+  }
+
+  .glass-hud {
+    background-color: var(--mat-hud);
+    background-image: var(--noise);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+    -webkit-backdrop-filter: blur(var(--blur-hud)) saturate(180%);
+    backdrop-filter: blur(var(--blur-hud)) saturate(180%);
+  }
+
+  .surface-card {
+    background-color: var(--card);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--specular), var(--shadow-1);
+  }
+
+  /* Fallback: remove backdrop-filter and use --mat-fallback */
+  html[data-ui="tv"] .glass-ultrathin,
+  html[data-ui="tv"] .glass-thin,
+  html[data-ui="tv"] .glass,
+  html[data-ui="tv"] .glass-thick,
+  html[data-ui="mobile"] .glass-ultrathin,
+  html[data-ui="mobile"] .glass-thin,
+  html[data-ui="mobile"] .glass,
+  html[data-ui="mobile"] .glass-thick,
+  html[data-motion="lite"] .glass-ultrathin,
+  html[data-motion="lite"] .glass-thin,
+  html[data-motion="lite"] .glass,
+  html[data-motion="lite"] .glass-thick,
+  html[data-motion="reduced"] .glass-ultrathin,
+  html[data-motion="reduced"] .glass-thin,
+  html[data-motion="reduced"] .glass,
+  html[data-motion="reduced"] .glass-thick {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--mat-fallback);
+  }
+
+  html[data-ui="tv"] .glass-hud,
+  html[data-ui="mobile"] .glass-hud,
+  html[data-motion="lite"] .glass-hud,
+  html[data-motion="reduced"] .glass-hud {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgb(14 15 18 / 0.9);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass-ultrathin,
+    .glass-thin,
+    .glass,
+    .glass-thick {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: var(--mat-fallback);
+    }
+    .glass-hud {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: rgb(14 15 18 / 0.9);
+    }
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-ultrathin,
+    .glass-thin,
+    .glass,
+    .glass-thick {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: var(--mat-fallback);
+    }
+    .glass-hud {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+      background-color: rgb(14 15 18 / 0.9);
+    }
+  }
+
+  /* Typography helpers */
+  .large-title {
+    font-size: 30px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+
+  html[data-ui="tv"] .large-title {
+    font-size: clamp(32px, 2.4vw, 48px);
+  }
+
+  .title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .label-caps {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--fg-subtle);
+  }
+
+  .timecode {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+}
+
+/* Desktop focus-visible */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+body {
+  margin: 0;
+  background-color: var(--surface-0);
+  color: var(--fg);
+  font-family: var(--font-system);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient drift: opacity and transform only */
+@keyframes ambient-drift {
+  0% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.animate-ambient {
+  animation: ambient-drift 40s ease-in-out infinite alternate;
+}
+
+/* Base keyframe animations: strictly transform and opacity only */
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+.animate-live-pulse {
+  animation: live-dot-pulse 2s infinite ease-in-out;
+}
+
+/* Skeleton shimmer: opacity pulse only, no background-position */
+@keyframes shimmer-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer-pulse 1.6s ease-in-out infinite;
+}
+
+/* Centered channel switch bump: transform and opacity only */
+@keyframes channel-bump-anim {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+}
+
+.animate-channel-bump {
+  animation: channel-bump-anim 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Transition utility classes */
+.transition-spring {
+  transition-property: transform, opacity;
+  transition-timing-function: var(--ease-spring);
+  transition-duration: var(--dur-normal);
+}
+
+.transition-hud {
+  transition-property: opacity;
+  transition-timing-function: var(--ease-spring);
+  transition-duration: var(--dur-slow);
+}
+
+/* Button active press feedback: subtle physics scale (0.97) */
+button:active:not(:disabled),
+a[role="button"]:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-fast) ease-out;
+}
+
+/* Native dialog scale + opacity entry/exit */
+dialog {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--dur-normal) var(--ease-spring),
+    transform var(--dur-normal) var(--ease-spring),
+    overlay var(--dur-normal) allow-discrete,
+    display var(--dur-normal) allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--dur-normal) ease-out,
+    overlay var(--dur-normal) allow-discrete,
+    display var(--dur-normal) allow-discrete;
+}
+
+dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/*
+ * Lite Motion Mode:
+ * - Halved transition durations
+ * - Removes spring overshoot
+ * - Disables non-essential looping animations (live dot, shimmer)
+ */
+html[data-motion="lite"] {
+  --dur-fast: 60ms;
+  --dur-normal: 120ms;
+  --dur-slow: 175ms;
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html[data-motion="lite"] .animate-live-pulse,
+html[data-motion="lite"] .animate-ambient {
+  animation: none !important;
+}
+
+html[data-motion="lite"] .animate-shimmer {
+  animation: none !important;
+  opacity: 0.6 !important;
+}
+
+/*
+ * Reduced Motion Mode (data-motion="reduced" and system prefers-reduced-motion):
+ * - Removes ALL transforms, translations, and scales
+ * - Keeps only 100ms opacity fades
+ * - Disables all looping animations
+ */
+html[data-motion="reduced"] {
+  --dur-fast: 100ms;
+  --dur-normal: 100ms;
+  --dur-slow: 100ms;
+  --ease-spring: ease-out;
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] ::before,
+html[data-motion="reduced"] ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 100ms !important;
+}
+
+html[data-motion="reduced"] .animate-live-pulse,
+html[data-motion="reduced"] .animate-shimmer,
+html[data-motion="reduced"] .animate-ambient {
+  animation: none !important;
+}
+
+html[data-motion="reduced"] .transition-spring,
+html[data-motion="reduced"] .reduced-motion-fade {
+  transform: none !important;
+  transition-property: opacity !important;
+  transition-duration: 100ms !important;
+}
+
+html[data-motion="reduced"] button:active,
+html[data-motion="reduced"] a[role="button"]:active {
+  transform: none !important;
+}
+
+html[data-motion="reduced"] dialog,
+html[data-motion="reduced"] dialog[open] {
+  transform: none !important;
+  transition-property: opacity !important;
+  transition-duration: 100ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 100ms;
+    --dur-normal: 100ms;
+    --dur-slow: 100ms;
+    --ease-spring: ease-out;
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 100ms !important;
+  }
+
+  .animate-live-pulse,
+  .animate-shimmer,
+  .animate-ambient {
+    animation: none !important;
+  }
+
+  .transition-spring,
+  .reduced-motion-fade {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
+  }
+
+  button:active,
+  a[role="button"]:active {
+    transform: none !important;
+  }
+
+  dialog,
+  dialog[open] {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
+  }
+}
+
+/* Shake animation for invalid digit input: transform only */
+@keyframes shake-anim {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-14px);
+  }
+  40%,
+  80% {
+    transform: translateX(14px);
+  }
+}
+
+.animate-shake {
+  animation: shake-anim 0.4s ease-in-out;
+}
+
+/*
+ * TV Mode Styling (html[data-ui="tv"])
+ * 10-foot viewing experience:
+ * - Hidden cursor
+ * - 5% safe-area overscan padding
+ * - High-contrast focus rings: 4px solid white + glow + scale 1.06 (via transform only)
+ * - Large touch/pill targets (min 72px)
+ * - Base typography scaling via clamp(vw)
+ */
+html[data-ui="tv"],
+html[data-ui="tv"] * {
+  cursor: none !important;
+}
+
+html[data-ui="tv"] {
+  font-size: clamp(20px, 1.6vw, 32px);
+}
+
+/* TV Safe Area Padding (5% overscan) */
+html[data-ui="tv"] .tv-safe-area {
+  padding-top: max(5vh, 40px);
+  padding-bottom: max(5vh, 40px);
+  padding-left: max(5vw, 48px);
+  padding-right: max(5vw, 48px);
+}
+
+/* Focus indicator for TV D-pad: 4px solid white + glow + scale 1.06 via transform */
+html[data-ui="tv"] button:focus-visible,
+html[data-ui="tv"] a:focus-visible,
+html[data-ui="tv"] input:focus-visible,
+html[data-ui="tv"] [tabindex="0"]:focus-visible,
+html[data-ui="tv"] [data-focusable]:focus-visible,
+html[data-ui="tv"] [data-focused="true"] {
+  outline: 4px solid #ffffff !important;
+  outline-offset: 3px !important;
+  box-shadow:
+    0 0 24px rgba(255, 255, 255, 0.8),
+    0 0 48px rgba(10, 132, 255, 0.45) !important;
+  transform: scale(1.06) !important;
+  transition-property: transform !important;
+  transition-timing-function: var(--ease-spring) !important;
+  transition-duration: var(--dur-normal) !important;
+  z-index: 40 !important;
+}
+
+/* Reduced motion disables the transform scale */
+html[data-motion="reduced"] html[data-ui="tv"] button:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] a:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] input:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [tabindex="0"]:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [data-focusable]:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [data-focused="true"] {
+  transform: none !important;
+}
+
+/* In TV mode, HUD buttons expand to large pills (min 72px tall) */
+html[data-ui="tv"] .tv-pill-button {
+  min-height: 72px;
+  min-width: 72px;
+  font-size: 1.15rem;
+}
+
+/* In TV mode, Idle Card is scaled up for 10-foot viewing */
+html[data-ui="tv"] [data-testid="idle-card"] {
+  padding: 1.5rem 2rem !important;
+  border-radius: 1.5rem !important;
+}
+
+html[data-ui="tv"] [data-testid="idle-card"] h2 {
+  font-size: 1.4rem !important;
+}
+
+html[data-ui="tv"] [data-testid="idle-card"] p {
+  font-size: 1rem !important;
+}
+
+/*
+ * Mobile Mode Styling (html[data-ui="mobile"])
+ * Responsive touch experience:
+ * - 100dvh viewport and safe-area support
+ * - Min 44px touch targets
+ * - Overscroll isolation
+ */
+html[data-ui="mobile"] {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+html[data-ui="mobile"] body {
+  min-height: 100dvh;
+  touch-action: manipulation;
+}
+
+/* Safe area padding utilities for mobile */
+.safe-area-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+
+.safe-area-left {
+  padding-left: max(env(safe-area-inset-left, 0px), 12px);
+}
+
+.safe-area-right {
+  padding-right: max(env(safe-area-inset-right, 0px), 12px);
+}

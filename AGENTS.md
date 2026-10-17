@@ -1,7 +1,7 @@
 # Agent Guide (`AGENTS.md`)
 
 ## Project Overview
-`tv-stream` is an automated 24/7 linear TV broadcast stream server ("mulai otomatis") built with Go 1.27, SQLite, and FFmpeg, delivering continuous HLS streams with on-demand transcoding.
+`niracast` is an automated 24/7 linear TV broadcast stream server ("mulai otomatis") built with Go 1.27, SQLite, and FFmpeg, delivering continuous HLS streams with on-demand transcoding.
 
 ## Orientation
 Always read these first before starting any task:
@@ -16,6 +16,21 @@ docker compose logs -f         # Follow container logs
 go test ./...                  # Run all unit and integration tests
 go vet ./...                   # Run code vetting and static checks
 ```
+
+### Frontend Commands
+```bash
+cd web/app && pnpm install     # Install frontend dependencies
+cd web/app && pnpm dev         # Run Vite dev server
+cd web/app && pnpm check       # Run Biome lint & format check
+cd web/app && pnpm typecheck   # Run TypeScript type check
+cd web/app && pnpm test        # Run Vitest unit tests
+cd web/app && pnpm build       # Build production SPA bundle
+```
+
+## Environment Variables
+- `ADMIN_PASSWORD`: Admin authentication password (empty = random password logged once on startup).
+- `SESSION_SECRET`: Secret key for HMAC cookie signing (empty = random per process, sessions reset on restart).
+- `TIMEZONE`: Server timezone for scheduled broadcasting (default `Asia/Jakarta`).
 
 ## Git Flow
 This repository follows Git Flow (`main`, `develop`, `feature/*`, `fix/*`, `release/*`, `hotfix/*`). See [docs/GIT_FLOW.md](docs/GIT_FLOW.md).

@@ -3,14 +3,30 @@
   var API = '/api/v1';
   var $ = function (s) { return document.querySelector(s); };
   var tbody = $('#channels tbody');
+  var csrfToken = '';
 
   function msg(t) { $('#msg').textContent = t || ''; }
 
   async function api(path, opts) {
+    opts = opts || {};
+    opts.credentials = 'same-origin';
+    if (opts.method && opts.method !== 'GET') {
+      opts.headers = opts.headers || {};
+      if (csrfToken) {
+        opts.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
     var res = await fetch(API + path, opts);
     var body = null;
     try { body = await res.json(); } catch (e) { /* no body */ }
-    if (!res.ok) throw new Error((body && body.error) || ('HTTP ' + res.status));
+    if (!res.ok) {
+      if (res.status === 401 && path !== '/auth/login') {
+        csrfToken = '';
+        $('#logout-btn').hidden = true;
+        $('#login-modal').showModal();
+      }
+      throw new Error((body && body.error) || ('HTTP ' + res.status));
+    }
     return body;
   }
 
@@ -94,6 +110,57 @@
     } catch (e) { msg(e.message); $('#modal').close(); }
   });
 
+  var loginModal = $('#login-modal');
+  var loginForm = $('#login-form');
+  var logoutBtn = $('#logout-btn');
+
+  loginForm.addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var pwd = $('#login-password').value;
+    try {
+      var res = await api('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+      csrfToken = (res && res.csrf) || '';
+      $('#login-msg').textContent = '';
+      $('#login-password').value = '';
+      loginModal.close();
+      logoutBtn.hidden = false;
+      msg('');
+      load();
+    } catch (e) {
+      $('#login-msg').textContent = e.message;
+    }
+  });
+
+  logoutBtn.addEventListener('click', async function () {
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch (e) { /* ignore */ }
+    csrfToken = '';
+    logoutBtn.hidden = true;
+    loginModal.showModal();
+  });
+
+  async function checkAuth() {
+    try {
+      var me = await api('/auth/me');
+      if (me && me.authenticated) {
+        csrfToken = me.csrf || '';
+        logoutBtn.hidden = false;
+      } else {
+        csrfToken = '';
+        logoutBtn.hidden = true;
+        loginModal.showModal();
+      }
+    } catch (e) {
+      loginModal.showModal();
+    }
+  }
+
+  checkAuth();
   load();
   setInterval(load, 15000);
 })();

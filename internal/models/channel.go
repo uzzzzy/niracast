@@ -14,11 +14,15 @@ var ErrDuplicateNumber = errors.New("channel number already exists")
 // ErrNotFound is returned when a row does not exist.
 var ErrNotFound = errors.New("not found")
 
+// ErrInvalidMode is returned when an invalid channel mode is supplied.
+var ErrInvalidMode = errors.New("invalid channel mode")
+
 // Channel is a TV channel.
 type Channel struct {
 	ID        int64     `json:"id"`
 	Number    int       `json:"number"`
 	Name      string    `json:"name"`
+	Mode      string    `json:"mode"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -26,6 +30,7 @@ type Channel struct {
 type ChannelInput struct {
 	Number int    `json:"number"`
 	Name   string `json:"name"`
+	Mode   string `json:"mode,omitempty"`
 }
 
 // PlaylistInput is the DTO for arranging media into a channel playlist.
@@ -50,7 +55,7 @@ func isUnique(err error) bool {
 }
 
 func ListChannels(db *sql.DB) ([]Channel, error) {
-	rows, err := db.Query(`SELECT id, number, name, created_at FROM channels ORDER BY number`)
+	rows, err := db.Query(`SELECT id, number, name, mode, created_at FROM channels ORDER BY number`)
 	if err != nil {
 		return nil, fmt.Errorf("list channels: %w", err)
 	}
@@ -59,7 +64,7 @@ func ListChannels(db *sql.DB) ([]Channel, error) {
 	for rows.Next() {
 		var c Channel
 		var created sql.NullTime
-		if err := rows.Scan(&c.ID, &c.Number, &c.Name, &created); err != nil {
+		if err := rows.Scan(&c.ID, &c.Number, &c.Name, &c.Mode, &created); err != nil {
 			return nil, fmt.Errorf("scan channel: %w", err)
 		}
 		c.CreatedAt = created.Time
@@ -74,8 +79,8 @@ func ListChannels(db *sql.DB) ([]Channel, error) {
 func GetChannel(db *sql.DB, id int64) (*Channel, error) {
 	var c Channel
 	var created sql.NullTime
-	err := db.QueryRow(`SELECT id, number, name, created_at FROM channels WHERE id = ?`, id).
-		Scan(&c.ID, &c.Number, &c.Name, &created)
+	err := db.QueryRow(`SELECT id, number, name, mode, created_at FROM channels WHERE id = ?`, id).
+		Scan(&c.ID, &c.Number, &c.Name, &c.Mode, &created)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -87,8 +92,15 @@ func GetChannel(db *sql.DB, id int64) (*Channel, error) {
 }
 
 func CreateChannel(db *sql.DB, in ChannelInput) (*Channel, error) {
+	mode := in.Mode
+	if mode == "" {
+		mode = "loop"
+	} else if mode != "loop" && mode != "scheduled" {
+		return nil, ErrInvalidMode
+	}
+
 	now := time.Now().UTC()
-	res, err := db.Exec(`INSERT INTO channels (number, name, created_at) VALUES (?, ?, ?)`, in.Number, in.Name, now)
+	res, err := db.Exec(`INSERT INTO channels (number, name, mode, created_at) VALUES (?, ?, ?, ?)`, in.Number, in.Name, mode, now)
 	if isUnique(err) {
 		return nil, ErrDuplicateNumber
 	}
@@ -99,11 +111,24 @@ func CreateChannel(db *sql.DB, in ChannelInput) (*Channel, error) {
 	if err != nil {
 		return nil, fmt.Errorf("last insert id: %w", err)
 	}
-	return &Channel{ID: id, Number: in.Number, Name: in.Name, CreatedAt: now}, nil
+	return &Channel{ID: id, Number: in.Number, Name: in.Name, Mode: mode, CreatedAt: now}, nil
 }
 
 func UpdateChannel(db *sql.DB, id int64, in ChannelInput) (*Channel, error) {
-	res, err := db.Exec(`UPDATE channels SET number = ?, name = ? WHERE id = ?`, in.Number, in.Name, id)
+	cur, err := GetChannel(db, id)
+	if err != nil {
+		return nil, err
+	}
+
+	mode := cur.Mode
+	if in.Mode != "" {
+		if in.Mode != "loop" && in.Mode != "scheduled" {
+			return nil, ErrInvalidMode
+		}
+		mode = in.Mode
+	}
+
+	res, err := db.Exec(`UPDATE channels SET number = ?, name = ?, mode = ? WHERE id = ?`, in.Number, in.Name, mode, id)
 	if isUnique(err) {
 		return nil, ErrDuplicateNumber
 	}
@@ -129,16 +154,16 @@ func DeleteChannel(db *sql.DB, id int64) error {
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ErrNotFound
 	}
-	if _, err := tx.Exec(`DELETE FROM schedules WHERE channel_id = ?`, id); err != nil {
-		return fmt.Errorf("delete channel schedule: %w", err)
+	if _, err := tx.Exec(`DELETE FROM playlist_items WHERE channel_id = ?`, id); err != nil {
+		return fmt.Errorf("delete channel playlist: %w", err)
 	}
-	if _, err := tx.Exec(`DELETE FROM playlists WHERE channel_id = ?`, id); err != nil {
-		return fmt.Errorf("delete channel playlists: %w", err)
+	if _, err := tx.Exec(`DELETE FROM schedule_slots WHERE channel_id = ?`, id); err != nil {
+		return fmt.Errorf("delete channel schedule slots: %w", err)
 	}
 	return tx.Commit()
 }
 
-// SetPlaylist replaces the channel's ordered media items (stored in schedules).
+// SetPlaylist replaces the channel's ordered media items in playlist_items.
 func SetPlaylist(db *sql.DB, channelID int64, mediaIDs []int64) ([]PlaylistItem, error) {
 	tx, err := db.Begin()
 	if err != nil {
@@ -152,7 +177,7 @@ func SetPlaylist(db *sql.DB, channelID int64, mediaIDs []int64) ([]PlaylistItem,
 	} else if err != nil {
 		return nil, fmt.Errorf("check channel: %w", err)
 	}
-	if _, err := tx.Exec(`DELETE FROM schedules WHERE channel_id = ?`, channelID); err != nil {
+	if _, err := tx.Exec(`DELETE FROM playlist_items WHERE channel_id = ?`, channelID); err != nil {
 		return nil, fmt.Errorf("clear playlist: %w", err)
 	}
 	items := []PlaylistItem{}
@@ -165,7 +190,7 @@ func SetPlaylist(db *sql.DB, channelID int64, mediaIDs []int64) ([]PlaylistItem,
 		if err != nil {
 			return nil, fmt.Errorf("lookup media %d: %w", mid, err)
 		}
-		if _, err := tx.Exec(`INSERT INTO schedules (channel_id, media_id, duration_sec, position_order) VALUES (?, ?, ?, ?)`,
+		if _, err := tx.Exec(`INSERT INTO playlist_items (channel_id, media_id, duration_sec, position_order) VALUES (?, ?, ?, ?)`,
 			channelID, mid, dur.Float64, i); err != nil {
 			return nil, fmt.Errorf("insert playlist item: %w", err)
 		}
@@ -175,4 +200,61 @@ func SetPlaylist(db *sql.DB, channelID int64, mediaIDs []int64) ([]PlaylistItem,
 		return nil, fmt.Errorf("commit: %w", err)
 	}
 	return items, nil
+}
+
+// ChannelPlaylistItem is an entry in the channel playlist response.
+type ChannelPlaylistItem struct {
+	MediaID     int64   `json:"media_id"`
+	Position    int     `json:"position"`
+	Filename    string  `json:"filename"`
+	DurationSec float64 `json:"duration_sec"`
+}
+
+// ChannelPlaylistResponse is returned by GET /api/v1/channels/{id}/playlist.
+type ChannelPlaylistResponse struct {
+	ChannelID        int64                 `json:"channel_id"`
+	Items            []ChannelPlaylistItem `json:"items"`
+	TotalDurationSec float64               `json:"total_duration_sec"`
+}
+
+// GetPlaylist retrieves the ordered playlist and total duration for channelID.
+func GetPlaylist(db *sql.DB, channelID int64) (*ChannelPlaylistResponse, error) {
+	var exists int
+	err := db.QueryRow(`SELECT 1 FROM channels WHERE id = ?`, channelID).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("check channel: %w", err)
+	}
+
+	rows, err := db.Query(`SELECT p.media_id, p.position_order, COALESCE(m.filename, ''), COALESCE(p.duration_sec, m.duration_sec, 0)
+		FROM playlist_items p
+		LEFT JOIN media_files m ON m.id = p.media_id
+		WHERE p.channel_id = ?
+		ORDER BY p.position_order ASC, p.id ASC`, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("query playlist items: %w", err)
+	}
+	defer rows.Close()
+
+	items := []ChannelPlaylistItem{}
+	var totalDur float64
+	for rows.Next() {
+		var it ChannelPlaylistItem
+		if err := rows.Scan(&it.MediaID, &it.Position, &it.Filename, &it.DurationSec); err != nil {
+			return nil, fmt.Errorf("scan playlist item: %w", err)
+		}
+		totalDur += it.DurationSec
+		items = append(items, it)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate playlist items: %w", err)
+	}
+
+	return &ChannelPlaylistResponse{
+		ChannelID:        channelID,
+		Items:            items,
+		TotalDurationSec: totalDur,
+	}, nil
 }

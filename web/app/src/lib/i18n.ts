@@ -1,0 +1,703 @@
+import { useCallback, useEffect, useState } from 'react';
+
+export type Language = 'id' | 'en';
+
+export const translations = {
+  id: {
+    loading_broadcast: 'Memuat siaran...',
+    loading_channel: 'Memuat saluran...',
+    channel_not_found: 'Saluran Tidak Ditemukan',
+    channel_not_found_desc: 'Saluran yang diminta tidak ada atau tidak dapat dimuat.',
+    back_to_channels: 'Kembali ke Saluran',
+    live: 'LIVE',
+    idle: 'IDLE',
+    idle_title: 'Siaran Segera Kembali',
+    standby: 'Siaga',
+    reconnecting: 'Menghubungkan ulang...',
+    tap_to_unmute: 'Ketuk untuk membunyikan',
+    now_playing: 'Sedang Tayang',
+    next: 'Berikutnya',
+    in: 'dalam',
+    program_guide: 'Panduan Acara',
+    channels: 'Daftar Saluran',
+    close: 'Tutup',
+    mute: 'Bisukan',
+    unmute: 'Bunyikan',
+    volume: 'Volume',
+    fullscreen: 'Layar Penuh',
+    exit_fullscreen: 'Keluar Layar Penuh',
+    pip: 'Picture in Picture',
+    retry: 'Coba Lagi',
+    playback_error: 'Terjadi kesalahan pemutaran',
+    buffering: 'Memuat buffer...',
+    shortcuts_title: 'Pintasan Papan Ketik',
+    shortcuts_m: 'Bisukan / bunyikan audio',
+    shortcuts_f: 'Layar penuh',
+    shortcuts_p: 'Picture-in-picture',
+    shortcuts_g: 'Buka/tutup panduan acara',
+    shortcuts_c: 'Buka/tutup daftar saluran',
+    shortcuts_up_down: 'Saluran sebelumnya / berikutnya',
+    shortcuts_digits: 'Lompat ke saluran 1-9',
+    shortcuts_esc: 'Tutup panel',
+    shortcuts_help: 'Bantuan pintasan',
+    shortcuts_n: 'Ganti mode gerakan (Otomatis/Penuh/Ringan)',
+    motion_label: 'Gerakan',
+    motion_auto: 'Otomatis',
+    motion_full: 'Penuh',
+    motion_lite: 'Ringan',
+    motion_reduced: 'Tereduksi',
+    motion_tooltip: 'Mode Gerakan: {mode}',
+    theme: 'Tema',
+    theme_system: 'Sistem',
+    theme_light: 'Terang',
+    theme_dark: 'Gelap',
+    now: 'Sekarang',
+    no_epg: 'Tidak ada jadwal acara',
+
+    // TV Remote Legend & OSD
+    remote_legend_title: 'Panduan Remote',
+    remote_up_down: 'Ganti saluran',
+    remote_left_right: 'Atur volume (-/+ 5%)',
+    remote_ok: 'Buka menu kontrol / Pilih',
+    remote_back: 'Tutup panel / menu',
+    remote_digits: 'Lompat ke nomor saluran',
+    remote_play_pause: 'Bisukan siaran (Live TV tidak bisa dijeda)',
+    remote_info: 'Tampilkan / sembunyikan info siaran',
+    remote_guide: 'Buka panduan acara',
+    channel_number_input: 'Saluran {number}',
+    no_such_channel: 'Saluran tidak ditemukan',
+    live_cannot_pause: 'Siaran langsung tidak dapat dijeda',
+    muted_chip: 'Dibisukan',
+    unmuted_chip: 'Bunyi aktif',
+
+    // Mobile Gestures & Bottom Sheets
+    drag_handle: 'Tarik ke bawah untuk menutup',
+    swipe_channel_switch: 'Geser vertikal untuk ganti saluran',
+    double_tap_mute: 'Ketuk dua kali untuk bisu/bunyi',
+    double_tap_fullscreen: 'Ketuk dua kali untuk layar penuh',
+
+    // CMS Studio Auth
+    login_title: 'Studio Masuk',
+    login_subtitle: 'Masukkan kata sandi administrator untuk mengelola siaran.',
+    password_label: 'Kata Sandi',
+    password_placeholder: 'Masukkan kata sandi...',
+    show_password: 'Tampilkan kata sandi',
+    hide_password: 'Sembunyikan kata sandi',
+    sign_in: 'Masuk',
+    signing_in: 'Memeriksa...',
+    invalid_password: 'Kata sandi salah. Silakan coba lagi.',
+    rate_limit_error: 'Terlalu banyak percobaan. Coba lagi dalam {sec} detik.',
+    rate_limit_fallback: 'Terlalu banyak percobaan masuk. Silakan coba beberapa saat lagi.',
+    logout: 'Keluar',
+    logging_out: 'Keluar...',
+    session_expired: 'Sesi Anda telah berakhir. Silakan masuk kembali.',
+
+    // CMS Studio Shell & Navigation
+    studio_title: 'Studio Siaran',
+    nav_overview: 'Ringkasan',
+    nav_channels: 'Saluran',
+    nav_media: 'Pustaka Media',
+    nav_system: 'Sistem',
+    open_viewer: 'Buka Penampil',
+    live_status_connected: 'Live',
+    live_status_reconnecting: 'Menghubungkan ulang...',
+    language: 'Bahasa',
+
+    // CMS Studio Overview
+    overview_title: 'Pemantau Siaran Langsung',
+    overview_subtitle: 'Status real-time pemutaran dan siaran seluruh saluran.',
+    stat_media_count: 'Total Media',
+    stat_total_channels: 'Total Saluran',
+    stat_running_channels: 'Saluran Aktif',
+    stat_uptime: 'Waktu Aktif',
+    badge_playing: 'MEMUTAR',
+    badge_idle: 'SIAGA',
+    badge_stopped: 'BERHENTI',
+    skip_button: 'Lewati',
+    skip_confirm: 'Saluran berhasil dilewati.',
+    skip_error_not_playing: 'Saluran tidak sedang memutar media.',
+    copy_hls_url: 'Salin URL HLS',
+    copy_m3u_url: 'Salin M3U',
+    copy_epg_url: 'Salin EPG',
+    copied_to_clipboard: 'Tautan disalin ke papan klip.',
+    feeds_quick_access: 'Tautan Umpan IPTV & EPG',
+    remaining: 'tersisa',
+
+    // CMS Studio Channels
+    channels_title: 'Manajemen Saluran',
+    channels_subtitle: 'Buat, ubah, dan atur saluran serta susunan pemutaran.',
+    create_channel: 'Buat Saluran',
+    edit_channel: 'Ubah Saluran',
+    delete_channel: 'Hapus Saluran',
+    channel_number: 'Nomor Saluran',
+    channel_name: 'Nama Saluran',
+    channel_number_placeholder: 'Misal: 1',
+    channel_name_placeholder: 'Misal: Berita 24 Jam',
+    manage_playlist: 'Kelola Playlist',
+    delete_confirm_title: 'Hapus Saluran?',
+    delete_confirm_message:
+      'Saluran dan seluruh daftar putar terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
+    confirm_delete: 'Hapus Saluran',
+    cancel: 'Batal',
+    save: 'Simpan',
+    created_at: 'Dibuat Pada',
+    actions: 'Aksi',
+    error_number_required: 'Nomor saluran harus berupa angka bulat positif (>= 1).',
+    error_name_required: 'Nama saluran harus antara 1 sampai 60 karakter.',
+    duplicate_number_error: 'Nomor saluran ini sudah digunakan oleh saluran lain.',
+    channel_created: 'Saluran berhasil dibuat.',
+    channel_updated: 'Saluran berhasil diperbarui.',
+    channel_deleted: 'Saluran berhasil dihapus.',
+    channel_delete_failed: 'Gagal menghapus saluran.',
+    no_channels: 'Belum ada saluran.',
+    no_channels_desc: 'Buat saluran pertama Anda untuk mulai menyiarkan konten.',
+
+    // CMS Studio Playlist Editor
+    playlist_editor_title: 'Editor Playlist',
+    back_to_channels_list: 'Kembali ke Saluran',
+    media_library_pane: 'Pustaka Media',
+    playlist_pane: 'Daftar Putar Saluran',
+    search_media_placeholder: 'Cari berkas media...',
+    add_to_playlist: 'Tambah',
+    remove_from_playlist: 'Hapus item',
+    unsaved_changes: 'Perubahan belum disimpan',
+    save_playlist: 'Simpan Playlist',
+    revert_playlist: 'Kembalikan',
+    saving_playlist: 'Menyimpan...',
+    playlist_saved: 'Daftar putar berhasil disimpan.',
+    playlist_save_failed: 'Gagal menyimpan daftar putar.',
+    total_duration: 'Total Durasi Loop',
+    item_count: 'Jumlah Item',
+    empty_playlist: 'Daftar putar kosong',
+    empty_playlist_desc:
+      'Tambahkan berkas media dari pustaka di sebelah kiri untuk mengisi siaran saluran ini.',
+    no_media_found: 'Tidak ada media ditemukan.',
+    loop_timeline: 'Garis Waktu Loop',
+    warn_unsaved_leave:
+      'Anda memiliki perubahan daftar putar yang belum disimpan. Tetap tinggalkan halaman?',
+
+    // CMS Studio Media Library
+    media_title: 'Pustaka Berkas Media',
+    media_subtitle: 'Daftar berkas video yang tersedia dari direktori /media.',
+    rescan_library: 'Pindai Ulang',
+    rescanning: 'Memindai...',
+    rescan_started: 'Pemindaian berkas media dimulai.',
+    rescan_finished: 'Pemindaian berkas selesai.',
+    rescan_error: 'Kesalahan pemindaian:',
+    search_media: 'Cari media...',
+    sort_name_asc: 'Nama (A-Z)',
+    sort_name_desc: 'Nama (Z-A)',
+    sort_duration_asc: 'Durasi (Terpendek)',
+    sort_duration_desc: 'Durasi (Terpanjang)',
+    col_filename: 'Nama Berkas',
+    col_duration: 'Durasi',
+    col_video_codec: 'Codec Video',
+    col_audio_codec: 'Codec Audio',
+    col_resolution: 'Resolusi',
+    no_media_mount: 'Tidak ada berkas media ditemukan',
+    media_mount_desc:
+      'Pastikan folder video terpasang ke direktori /media di container/server Anda, lalu klik Pindai Ulang.',
+
+    // CMS Studio System
+    system_title: 'Status Sistem & Pengaturan',
+    system_subtitle: 'Informasi lingkungan siaran FFmpeg, klip siaga, dan umpan IPTV.',
+    ffmpeg_info: 'Informasi FFmpeg',
+    ffmpeg_path: 'Jalur Biner',
+    ffmpeg_version: 'Versi FFmpeg',
+    idle_clip_info: 'Klip Video Siaga (Idle Card)',
+    idle_clip_status: 'Status Klip',
+    idle_clip_ready: 'Siap (Pre-encoded)',
+    idle_clip_not_ready: 'Belum Siap',
+    idle_clip_size: 'Ukuran Berkas',
+    idle_clip_modified: 'Terakhir Diperbarui',
+    feeds_info: 'Umpan IPTV & EPG Publik',
+    feed_m3u_desc: 'Daftar putar format M3U8 untuk aplikasi pemutar IPTV.',
+    feed_epg_desc: 'Jadwal acara XMLTV EPG untuk panduan siaran IPTV.',
+    feed_hls_desc: 'Contoh siaran langsung HLS untuk saluran 1.',
+    copy_url: 'Salin URL',
+    stat_uptime_days: 'hari',
+    stat_uptime_hours: 'jam',
+    stat_uptime_mins: 'menit',
+    stat_uptime_secs: 'detik',
+
+    // Channel Mode & Schedule
+    channel_mode: 'Mode Siaran',
+    mode_loop: 'Loop',
+    mode_scheduled: 'Terjadwal',
+    manage_schedule: 'Jadwal Siaran',
+    playlist_scheduled_banner:
+      'Saluran ini dalam mode Terjadwal. Daftar putar loop tidak digunakan saat mode terjadwal aktif.',
+    go_to_schedule: 'Buka Jadwal Siaran',
+    skip_unavailable_scheduled: 'Lewati tidak tersedia untuk saluran terjadwal',
+    schedule_title: 'Jadwal Siaran',
+    schedule_subtitle: 'Atur slot penayangan media berdasarkan waktu dan kalender.',
+    schedule_view_day: 'Harian',
+    schedule_view_week: 'Mingguan',
+    schedule_prev: 'Sebelumnya',
+    schedule_next: 'Berikutnya',
+    schedule_today: 'Hari Ini',
+    add_slot: 'Tambah Slot',
+    edit_slot: 'Ubah Slot',
+    delete_slot: 'Hapus Slot',
+    delete_slot_confirm_title: 'Hapus Slot Siaran?',
+    delete_slot_confirm:
+      'Apakah Anda yakin ingin menghapus slot siaran ini? Seri pengulangan jika ada akan ikut terhapus.',
+    slot_media: 'Media',
+    slot_select_media: 'Pilih berkas media...',
+    slot_date: 'Tanggal',
+    slot_start_time: 'Waktu Mulai',
+    slot_duration: 'Durasi Slot (detik)',
+    slot_recurrence: 'Pengulangan',
+    recurrence_none: 'Sekali',
+    recurrence_daily: 'Harian',
+    recurrence_weekly: 'Mingguan',
+    slot_until: 'Berulang Hingga',
+    slot_truncated_warning: 'Media lebih panjang dari durasi slot (siaran akan terpotong).',
+    slot_short_hint: 'Media lebih pendek dari durasi slot (siaran sela akan mengisi sisa waktu).',
+    slot_conflict_error: 'Jadwal bentrok dengan: {title} ({time})',
+    slot_created: 'Slot jadwal berhasil ditambahkan.',
+    slot_updated: 'Slot jadwal berhasil diperbarui.',
+    slot_deleted: 'Slot jadwal berhasil dihapus.',
+    slot_move_recurring_hint: 'Memindahkan siaran berulang akan memindahkan seluruh seri jadwal.',
+    switch_to_scheduled: 'Beralih ke Mode Terjadwal',
+    switching_mode: 'Mengalihkan mode...',
+    channel_is_in_loop_mode: 'Saluran Dalam Mode Loop',
+    channel_is_in_loop_desc:
+      'Saluran ini saat ini memutar daftar putar loop 24/7. Beralih ke mode terjadwal untuk menyiarkan media pada slot waktu tertentu.',
+    no_schedule_slots: 'Belum ada slot siaran',
+    no_schedule_slots_desc:
+      'Klik area garis waktu atau tekan Tambah Slot untuk mulai menjadwalkan siaran.',
+    timezone_label: 'Zona waktu: {tz}',
+    slate_filler_label: 'Siaran Segera Kembali',
+    chip_truncated: 'Terpotong',
+    chip_short: 'Pendek',
+
+    // CMS Studio Analytics
+    nav_analytics: 'Analitik',
+    analytics_title: 'Analitik Siaran',
+    analytics_subtitle:
+      'Statistik pemirsa langsung, tren penonton, penggunaan bandwidth, dan media terpopuler.',
+    analytics_range_1h: '1 Jam',
+    analytics_range_24h: '24 Jam',
+    analytics_range_7d: '7 Hari',
+    analytics_range_30d: '30 Hari',
+    analytics_filter_all_channels: 'Semua Saluran',
+    analytics_current_viewers: 'Pemirsa Langsung',
+    analytics_peak_viewers: 'Puncak Pemirsa',
+    analytics_total_bandwidth: 'Total Bandwidth',
+    analytics_total_watch_time: 'Total Waktu Tonton',
+    analytics_viewers_chart_title: 'Tren Pemirsa',
+    analytics_viewers_chart_desc: 'Jumlah pemirsa puncak per titik waktu agregasi.',
+    analytics_bandwidth_chart_title: 'Penggunaan Bandwidth',
+    analytics_bandwidth_chart_desc: 'Volume data siaran yang dikirimkan ke penonton.',
+    analytics_top_media_title: 'Media Terpopuler',
+    analytics_top_media_desc: 'Daftar video yang paling banyak ditonton.',
+    analytics_channels_health_title: 'Kesehatan Saluran Siaran',
+    analytics_channels_health_desc:
+      'Pemirsa per saluran, frekuensi restart playout, dan galat terakhir.',
+    analytics_channel_column: 'Saluran',
+    analytics_viewers_column: 'Pemirsa',
+    analytics_restarts_column: 'Restart',
+    analytics_last_error_column: 'Galat Terakhir',
+    analytics_no_data: 'Belum ada data analitik untuk rentang waktu ini.',
+    analytics_no_top_media: 'Belum ada data media yang ditonton.',
+    analytics_healthy: 'Sehat',
+    viewers_count: 'Pemirsa',
+    restarts_count: 'Restart',
+  },
+  en: {
+    loading_broadcast: 'Loading broadcast...',
+    loading_channel: 'Loading channel...',
+    channel_not_found: 'Channel Not Found',
+    channel_not_found_desc: 'The requested channel does not exist or could not be loaded.',
+    back_to_channels: 'Back to Channels',
+    live: 'LIVE',
+    idle: 'IDLE',
+    idle_title: "We'll be right back",
+    standby: 'Standby',
+    reconnecting: 'Reconnecting...',
+    tap_to_unmute: 'Tap to unmute',
+    now_playing: 'Now Playing',
+    next: 'Next',
+    in: 'in',
+    program_guide: 'Program Guide',
+    channels: 'Channels',
+    close: 'Close',
+    mute: 'Mute',
+    unmute: 'Unmute',
+    volume: 'Volume',
+    fullscreen: 'Fullscreen',
+    exit_fullscreen: 'Exit Fullscreen',
+    pip: 'Picture in Picture',
+    retry: 'Retry',
+    playback_error: 'Playback error occurred',
+    buffering: 'Buffering...',
+    shortcuts_title: 'Keyboard Shortcuts',
+    shortcuts_m: 'Toggle mute audio',
+    shortcuts_f: 'Toggle fullscreen',
+    shortcuts_p: 'Toggle picture-in-picture',
+    shortcuts_g: 'Toggle program guide',
+    shortcuts_c: 'Toggle channels list',
+    shortcuts_up_down: 'Previous / next channel',
+    shortcuts_digits: 'Jump to channel 1-9',
+    shortcuts_esc: 'Close open panel',
+    shortcuts_help: 'Keyboard shortcuts',
+    shortcuts_n: 'Cycle motion mode (Auto/Full/Lite)',
+    motion_label: 'Motion',
+    motion_auto: 'Auto',
+    motion_full: 'Full',
+    motion_lite: 'Lite',
+    motion_reduced: 'Reduced',
+    motion_tooltip: 'Motion Mode: {mode}',
+    theme: 'Theme',
+    theme_system: 'System',
+    theme_light: 'Light',
+    theme_dark: 'Dark',
+    now: 'Now',
+    no_epg: 'No schedule available',
+
+    // TV Remote Legend & OSD
+    remote_legend_title: 'Remote Control Guide',
+    remote_up_down: 'Change channel',
+    remote_left_right: 'Adjust volume (-/+ 5%)',
+    remote_ok: 'Open controls menu / Select',
+    remote_back: 'Close panel / menu',
+    remote_digits: 'Jump to channel number',
+    remote_play_pause: 'Mute broadcast (Live TV cannot pause)',
+    remote_info: 'Toggle broadcast info',
+    remote_guide: 'Open program guide',
+    channel_number_input: 'Channel {number}',
+    no_such_channel: 'No such channel',
+    live_cannot_pause: 'Live TV cannot be paused',
+    muted_chip: 'Muted',
+    unmuted_chip: 'Unmuted',
+
+    // Mobile Gestures & Bottom Sheets
+    drag_handle: 'Drag down to close',
+    swipe_channel_switch: 'Swipe vertically to switch channel',
+    double_tap_mute: 'Double-tap to mute/unmute',
+    double_tap_fullscreen: 'Double-tap for fullscreen',
+
+    // CMS Studio Auth
+    login_title: 'Studio Login',
+    login_subtitle: 'Enter administrator password to manage broadcast.',
+    password_label: 'Password',
+    password_placeholder: 'Enter password...',
+    show_password: 'Show password',
+    hide_password: 'Hide password',
+    sign_in: 'Sign In',
+    signing_in: 'Signing in...',
+    invalid_password: 'Invalid password. Please try again.',
+    rate_limit_error: 'Too many attempts. Try again in {sec} seconds.',
+    rate_limit_fallback: 'Too many login attempts. Please try again shortly.',
+    logout: 'Log out',
+    logging_out: 'Logging out...',
+    session_expired: 'Your session has expired. Please sign in again.',
+
+    // CMS Studio Shell & Navigation
+    studio_title: 'Broadcast Studio',
+    nav_overview: 'Overview',
+    nav_channels: 'Channels',
+    nav_media: 'Media Library',
+    nav_system: 'System',
+    open_viewer: 'Open Viewer',
+    live_status_connected: 'Live',
+    live_status_reconnecting: 'Reconnecting...',
+    language: 'Language',
+
+    // CMS Studio Overview
+    overview_title: 'Live Playout Monitor',
+    overview_subtitle: 'Real-time playout status across all channels.',
+    stat_media_count: 'Media Files',
+    stat_total_channels: 'Total Channels',
+    stat_running_channels: 'Active Playouts',
+    stat_uptime: 'System Uptime',
+    badge_playing: 'PLAYING',
+    badge_idle: 'IDLE',
+    badge_stopped: 'STOPPED',
+    skip_button: 'Skip',
+    skip_confirm: 'Channel skipped successfully.',
+    skip_error_not_playing: 'Channel is not playing media.',
+    copy_hls_url: 'Copy HLS URL',
+    copy_m3u_url: 'Copy M3U',
+    copy_epg_url: 'Copy EPG',
+    copied_to_clipboard: 'Link copied to clipboard.',
+    feeds_quick_access: 'IPTV & EPG Feed Links',
+    remaining: 'remaining',
+
+    // CMS Studio Channels
+    channels_title: 'Channel Management',
+    channels_subtitle: 'Create, edit, and organize channels and playlists.',
+    create_channel: 'Create Channel',
+    edit_channel: 'Edit Channel',
+    delete_channel: 'Delete Channel',
+    channel_number: 'Channel Number',
+    channel_name: 'Channel Name',
+    channel_number_placeholder: 'e.g. 1',
+    channel_name_placeholder: 'e.g. 24h News',
+    manage_playlist: 'Manage Playlist',
+    delete_confirm_title: 'Delete Channel?',
+    delete_confirm_message:
+      'The channel and its entire playlist will be permanently removed. This action cannot be undone.',
+    confirm_delete: 'Delete Channel',
+    cancel: 'Cancel',
+    save: 'Save',
+    created_at: 'Created At',
+    actions: 'Actions',
+    error_number_required: 'Channel number must be an integer (>= 1).',
+    error_name_required: 'Channel name must be between 1 and 60 characters.',
+    duplicate_number_error: 'Channel number is already in use by another channel.',
+    channel_created: 'Channel created successfully.',
+    channel_updated: 'Channel updated successfully.',
+    channel_deleted: 'Channel deleted successfully.',
+    channel_delete_failed: 'Failed to delete channel.',
+    no_channels: 'No channels yet.',
+    no_channels_desc: 'Create your first channel to start broadcasting content.',
+
+    // CMS Studio Playlist Editor
+    playlist_editor_title: 'Playlist Editor',
+    back_to_channels_list: 'Back to Channels',
+    media_library_pane: 'Media Library',
+    playlist_pane: 'Channel Playlist',
+    search_media_placeholder: 'Search media files...',
+    add_to_playlist: 'Add',
+    remove_from_playlist: 'Remove item',
+    unsaved_changes: 'Unsaved changes',
+    save_playlist: 'Save Changes',
+    revert_playlist: 'Revert',
+    saving_playlist: 'Saving...',
+    playlist_saved: 'Playlist saved successfully.',
+    playlist_save_failed: 'Failed to save playlist.',
+    total_duration: 'Total Loop Duration',
+    item_count: 'Item Count',
+    empty_playlist: 'Empty playlist',
+    empty_playlist_desc: 'Add media files from the library on the left to populate this channel.',
+    no_media_found: 'No media found.',
+    loop_timeline: 'Loop Timeline',
+    warn_unsaved_leave: 'You have unsaved playlist changes. Are you sure you want to leave?',
+
+    // CMS Studio Media Library
+    media_title: 'Media File Library',
+    media_subtitle: 'List of video files available from the /media mount.',
+    rescan_library: 'Rescan',
+    rescanning: 'Scanning...',
+    rescan_started: 'Media library rescan started.',
+    rescan_finished: 'Media scan finished.',
+    rescan_error: 'Scan error:',
+    search_media: 'Search media...',
+    sort_name_asc: 'Name (A-Z)',
+    sort_name_desc: 'Name (Z-A)',
+    sort_duration_asc: 'Duration (Shortest)',
+    sort_duration_desc: 'Duration (Longest)',
+    col_filename: 'Filename',
+    col_duration: 'Duration',
+    col_video_codec: 'Video Codec',
+    col_audio_codec: 'Audio Codec',
+    col_resolution: 'Resolution',
+    no_media_mount: 'No media files found',
+    media_mount_desc:
+      'Ensure your video directory is mounted to /media on your container/server, then click Rescan.',
+
+    // CMS Studio System
+    system_title: 'System Status & Feeds',
+    system_subtitle: 'FFmpeg playout environment, idle standby card, and IPTV feeds.',
+    ffmpeg_info: 'FFmpeg Information',
+    ffmpeg_path: 'Binary Path',
+    ffmpeg_version: 'FFmpeg Version',
+    idle_clip_info: 'Idle Standby Video Card',
+    idle_clip_status: 'Clip Status',
+    idle_clip_ready: 'Ready (Pre-encoded)',
+    idle_clip_not_ready: 'Not Ready',
+    idle_clip_size: 'File Size',
+    idle_clip_modified: 'Last Modified',
+    feeds_info: 'Public IPTV & EPG Feeds',
+    feed_m3u_desc: 'M3U8 playlist for IPTV player applications.',
+    feed_epg_desc: 'XMLTV EPG schedule for electronic program guide.',
+    feed_hls_desc: 'Sample HLS live stream endpoint for Channel 1.',
+    copy_url: 'Copy URL',
+    stat_uptime_days: 'days',
+    stat_uptime_hours: 'hours',
+    stat_uptime_mins: 'mins',
+    stat_uptime_secs: 'secs',
+
+    // Channel Mode & Schedule
+    channel_mode: 'Broadcast Mode',
+    mode_loop: 'Loop',
+    mode_scheduled: 'Scheduled',
+    manage_schedule: 'Broadcast Schedule',
+    playlist_scheduled_banner:
+      'This channel is in Scheduled mode. The loop playlist is ignored while scheduled mode is active.',
+    go_to_schedule: 'Open Broadcast Schedule',
+    skip_unavailable_scheduled: 'Skip is unavailable for scheduled channels',
+    schedule_title: 'Broadcast Schedule',
+    schedule_subtitle: 'Organize media broadcast slots by time and calendar.',
+    schedule_view_day: 'Day',
+    schedule_view_week: 'Week',
+    schedule_prev: 'Previous',
+    schedule_next: 'Next',
+    schedule_today: 'Today',
+    add_slot: 'Add Slot',
+    edit_slot: 'Edit Slot',
+    delete_slot: 'Delete Slot',
+    delete_slot_confirm_title: 'Delete Broadcast Slot?',
+    delete_slot_confirm:
+      'Are you sure you want to delete this broadcast slot? Recurring series if any will also be deleted.',
+    slot_media: 'Media',
+    slot_select_media: 'Select media file...',
+    slot_date: 'Date',
+    slot_start_time: 'Start Time',
+    slot_duration: 'Slot Duration (seconds)',
+    slot_recurrence: 'Recurrence',
+    recurrence_none: 'None',
+    recurrence_daily: 'Daily',
+    recurrence_weekly: 'Weekly',
+    slot_until: 'Repeat Until',
+    slot_truncated_warning: 'Media duration exceeds slot length (broadcast will be cut).',
+    slot_short_hint: 'Media is shorter than slot length (slate filler will air for remainder).',
+    slot_conflict_error: 'Schedule conflicts with: {title} ({time})',
+    slot_created: 'Schedule slot added successfully.',
+    slot_updated: 'Schedule slot updated successfully.',
+    slot_deleted: 'Schedule slot deleted successfully.',
+    slot_move_recurring_hint: 'Moving a recurring broadcast moves the entire schedule series.',
+    switch_to_scheduled: 'Switch to Scheduled Mode',
+    switching_mode: 'Switching mode...',
+    channel_is_in_loop_mode: 'Channel is in Loop Mode',
+    channel_is_in_loop_desc:
+      'This channel currently plays a 24/7 loop playlist. Switch to scheduled mode to air programs at specific times.',
+    no_schedule_slots: 'No scheduled broadcasts',
+    no_schedule_slots_desc:
+      'Click the timeline area or click Add Slot to start scheduling programs.',
+    timezone_label: 'Timezone: {tz}',
+    slate_filler_label: "We'll Be Right Back",
+    chip_truncated: 'Truncated',
+    chip_short: 'Short',
+
+    // CMS Studio Analytics
+    nav_analytics: 'Analytics',
+    analytics_title: 'Broadcast Analytics',
+    analytics_subtitle:
+      'Real-time viewer metrics, audience trends, bandwidth delivery, and top media.',
+    analytics_range_1h: '1 Hour',
+    analytics_range_24h: '24 Hours',
+    analytics_range_7d: '7 Days',
+    analytics_range_30d: '30 Days',
+    analytics_filter_all_channels: 'All Channels',
+    analytics_current_viewers: 'Current Viewers',
+    analytics_peak_viewers: 'Peak Viewers',
+    analytics_total_bandwidth: 'Total Bandwidth',
+    analytics_total_watch_time: 'Total Watch Time',
+    analytics_viewers_chart_title: 'Viewer Trends',
+    analytics_viewers_chart_desc: 'Peak viewer concurrency per aggregation point.',
+    analytics_bandwidth_chart_title: 'Bandwidth Delivered',
+    analytics_bandwidth_chart_desc: 'Total volume of broadcast data streamed to viewers.',
+    analytics_top_media_title: 'Top Media',
+    analytics_top_media_desc: 'Most-watched media items ranked by watch duration.',
+    analytics_channels_health_title: 'Channel Playout Health',
+    analytics_channels_health_desc:
+      'Active viewers per channel, supervisor restart counts, and error states.',
+    analytics_channel_column: 'Channel',
+    analytics_viewers_column: 'Viewers',
+    analytics_restarts_column: 'Restarts',
+    analytics_last_error_column: 'Last Error',
+    analytics_no_data: 'No analytics data available for this range.',
+    analytics_no_top_media: 'No media watch history recorded yet.',
+    analytics_healthy: 'Healthy',
+    viewers_count: 'Viewers',
+    restarts_count: 'Restarts',
+  },
+} as const;
+
+export type TranslationKey = keyof (typeof translations)['id'];
+
+export function getLanguage(): Language {
+  if (typeof window === 'undefined') {
+    return 'id';
+  }
+
+  try {
+    const saved = localStorage.getItem('lang');
+    if (saved === 'id' || saved === 'en') {
+      return saved;
+    }
+  } catch {
+    // Ignore storage errors
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.language) {
+    const navLang = navigator.language.toLowerCase();
+    if (navLang.startsWith('en')) {
+      return 'en';
+    }
+    if (navLang.startsWith('id')) {
+      return 'id';
+    }
+  }
+
+  return 'en';
+}
+
+export function setLanguage(lang: Language): void {
+  try {
+    localStorage.setItem('lang', lang);
+  } catch {
+    // Ignore storage errors
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('niracast-lang-change', { detail: lang }));
+  }
+}
+
+export function t(
+  key: TranslationKey,
+  lang?: string,
+  params?: Record<string, string | number>,
+): string {
+  let targetLang: Language;
+  if (lang) {
+    targetLang = lang === 'en' ? 'en' : 'id';
+  } else {
+    targetLang = getLanguage();
+  }
+  const dict = translations[targetLang] || translations.id;
+  let text = dict[key] ?? translations.id[key] ?? key;
+
+  if (params) {
+    for (const [pKey, pVal] of Object.entries(params)) {
+      text = text.replace(`{${pKey}}`, String(pVal)) as (typeof dict)[TranslationKey];
+    }
+  }
+
+  return text;
+}
+
+export function useTranslation() {
+  const [lang, setLangState] = useState<Language>(getLanguage);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<Language>;
+      setLangState(custom.detail || getLanguage());
+    };
+    window.addEventListener('niracast-lang-change', handler);
+    return () => window.removeEventListener('niracast-lang-change', handler);
+  }, []);
+
+  const changeLang = useCallback((newLang: Language) => {
+    setLanguage(newLang);
+    setLangState(newLang);
+  }, []);
+
+  const translate = useCallback(
+    (key: TranslationKey, params?: Record<string, string | number>) => {
+      return t(key, lang, params);
+    },
+    [lang],
+  );
+
+  return {
+    lang,
+    setLanguage: changeLang,
+    t: translate,
+  };
+}

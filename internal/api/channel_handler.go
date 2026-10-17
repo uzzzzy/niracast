@@ -7,22 +7,51 @@ import (
 	"net/http"
 	"strconv"
 
-	"tv-stream/internal/models"
+	"github.com/uzzzzy/niracast/internal/models"
 )
+
+// PlayoutStopper terminates stream playout for a channel.
+type PlayoutStopper interface {
+	StopStream(channelID int64) error
+}
+
+// Reloader re-evaluates channel playout.
+type Reloader interface {
+	Reload(channelID int64)
+}
 
 // ChannelHandler serves channel & playlist CRUD endpoints.
 type ChannelHandler struct {
-	DB *sql.DB
+	DB       *sql.DB
+	Stopper  PlayoutStopper
+	Reloader Reloader
 }
 
-func NewChannelHandler(db *sql.DB) *ChannelHandler { return &ChannelHandler{DB: db} }
+func NewChannelHandler(db *sql.DB, stopper ...PlayoutStopper) *ChannelHandler {
+	var s PlayoutStopper
+	if len(stopper) > 0 {
+		s = stopper[0]
+	}
+	var r Reloader
+	if rel, ok := s.(Reloader); ok {
+		r = rel
+	}
+	return &ChannelHandler{DB: db, Stopper: s, Reloader: r}
+}
+
+// SetReloader configures an optional Reloader.
+func (h *ChannelHandler) SetReloader(r Reloader) {
+	h.Reloader = r
+}
 
 // Register mounts routes on mux (Go 1.22+ pattern routing).
 func (h *ChannelHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/channels", h.list)
 	mux.HandleFunc("POST /api/v1/channels", h.create)
+	mux.HandleFunc("GET /api/v1/channels/{id}", h.get)
 	mux.HandleFunc("PUT /api/v1/channels/{id}", h.update)
 	mux.HandleFunc("DELETE /api/v1/channels/{id}", h.delete)
+	mux.HandleFunc("GET /api/v1/channels/{id}/playlist", h.getPlaylist)
 	mux.HandleFunc("POST /api/v1/channels/{id}/playlist", h.setPlaylist)
 }
 
@@ -44,6 +73,8 @@ func chHandleModelErr(w http.ResponseWriter, err error) {
 		chWriteError(w, http.StatusNotFound, "channel not found")
 	case errors.Is(err, models.ErrDuplicateNumber):
 		chWriteError(w, http.StatusConflict, err.Error())
+	case errors.Is(err, models.ErrInvalidMode):
+		chWriteError(w, http.StatusBadRequest, err.Error())
 	case errors.As(err, &mm):
 		chWriteError(w, http.StatusBadRequest, mm.Error())
 	default:
@@ -62,6 +93,7 @@ func chPathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 
 func chDecode(w http.ResponseWriter, r *http.Request) (models.ChannelInput, bool) {
 	var in models.ChannelInput
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		chWriteError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return in, false
@@ -86,6 +118,20 @@ func (h *ChannelHandler) list(w http.ResponseWriter, r *http.Request) {
 	chWriteJSON(w, http.StatusOK, chs)
 }
 
+func (h *ChannelHandler) get(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		chWriteError(w, http.StatusNotFound, "channel not found")
+		return
+	}
+	c, err := models.GetChannel(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
+	chWriteJSON(w, http.StatusOK, c)
+}
+
 func (h *ChannelHandler) create(w http.ResponseWriter, r *http.Request) {
 	in, ok := chDecode(w, r)
 	if !ok {
@@ -108,10 +154,18 @@ func (h *ChannelHandler) update(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	cur, err := models.GetChannel(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
 	c, err := models.UpdateChannel(h.DB, id, in)
 	if err != nil {
 		chHandleModelErr(w, err)
 		return
+	}
+	if h.Reloader != nil && cur.Mode != c.Mode {
+		h.Reloader.Reload(id)
 	}
 	chWriteJSON(w, http.StatusOK, c)
 }
@@ -125,7 +179,23 @@ func (h *ChannelHandler) delete(w http.ResponseWriter, r *http.Request) {
 		chHandleModelErr(w, err)
 		return
 	}
-	chWriteJSON(w, http.StatusOK, map[string]any{"deleted": id})
+	if h.Stopper != nil {
+		_ = h.Stopper.StopStream(id)
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ChannelHandler) getPlaylist(w http.ResponseWriter, r *http.Request) {
+	id, ok := chPathID(w, r)
+	if !ok {
+		return
+	}
+	pl, err := models.GetPlaylist(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
+	chWriteJSON(w, http.StatusOK, pl)
 }
 
 func (h *ChannelHandler) setPlaylist(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +204,7 @@ func (h *ChannelHandler) setPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in models.PlaylistInput
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		chWriteError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return

@@ -2,6 +2,7 @@
 /media/
 /data/
 /transcode/
+sample/
 
 # Database files
 *.db
@@ -28,3 +29,14 @@ ehthumbs.db
 Desktop.ini
 .DS_Store
 ._*
+
+# Frontend build & dependencies
+web/app/node_modules/
+web/app/dist/*
+!web/app/dist/.gitkeep
+
+# Local build/test artifacts
+coverage.out
+.turbo/
+/niracast
+/server
