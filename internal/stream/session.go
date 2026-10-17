@@ -151,3 +151,20 @@ func (sm *SessionManager) cleanSegments(dir string) {
 		}
 	}
 }
+
+// IsActive reports whether channelID has been pinged within the idle timeout
+// window. The supervisor calls this before restarting a process so it can stop
+// looping for channels that have had no viewers for too long.
+func (sm *SessionManager) IsActive(channelID int64) bool {
+	timeout := sm.IdleTimeout
+	if timeout <= 0 {
+		timeout = DefaultIdleTimeout
+	}
+	sm.mu.Lock()
+	last, ok := sm.lastAccess[channelID]
+	sm.mu.Unlock()
+	if !ok {
+		return false
+	}
+	return sm.clock().Sub(last) <= timeout
+}

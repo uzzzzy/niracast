@@ -16,12 +16,18 @@ type sessFakeCtrl struct {
 
 func (f *sessFakeCtrl) StartStream(context.Context, StreamConfig) error { return nil }
 func (f *sessFakeCtrl) IsRunning(int64) bool                            { return true }
+func (f *sessFakeCtrl) Done(int64) <-chan struct{} {
+	ch := make(chan struct{})
+	close(ch)
+	return ch
+}
 func (f *sessFakeCtrl) StopStream(id int64) error {
 	f.mu.Lock()
 	f.stopped = append(f.stopped, id)
 	f.mu.Unlock()
 	return nil
 }
+func (f *sessFakeCtrl) StderrTail(int64) string { return "" }
 func (f *sessFakeCtrl) list() []int64 {
 	f.mu.Lock()
 	defer f.mu.Unlock()
