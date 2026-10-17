@@ -12,15 +12,15 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"tv-stream/internal/analytics"
-	"tv-stream/internal/api"
-	"tv-stream/internal/auth"
-	"tv-stream/internal/db"
-	"tv-stream/internal/events"
-	"tv-stream/internal/feed"
-	"tv-stream/internal/stream"
-	"tv-stream/internal/timeline"
-	"tv-stream/web"
+	"github.com/uzzzzy/niracast/internal/analytics"
+	"github.com/uzzzzy/niracast/internal/api"
+	"github.com/uzzzzy/niracast/internal/auth"
+	"github.com/uzzzzy/niracast/internal/db"
+	"github.com/uzzzzy/niracast/internal/events"
+	"github.com/uzzzzy/niracast/internal/feed"
+	"github.com/uzzzzy/niracast/internal/stream"
+	"github.com/uzzzzy/niracast/internal/timeline"
+	"github.com/uzzzzy/niracast/web"
 )
 
 func env(key, def string) string {
@@ -32,7 +32,7 @@ func env(key, def string) string {
 
 func main() {
 	addr := env("ADDR", ":8080")
-	dbPath := env("DB_PATH", "/data/tv-stream.db")
+	dbPath := env("DB_PATH", "/data/niracast.db")
 	mediaDir := env("MEDIA_DIR", "/media")
 	transcodeDir := env("TRANSCODE_DIR", "/transcode")
 	staticDir := env("STATIC_DIR", "web/static")
@@ -210,7 +210,7 @@ func main() {
 		_ = srv.Shutdown(shutdown)
 	}()
 
-	log.Printf("tv-stream listening on %s (media=%s db=%s)", addr, mediaDir, dbPath)
+	log.Printf("niracast listening on %s (media=%s db=%s)", addr, mediaDir, dbPath)
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func TestChannelCRUD_Mode(t *testing.T) {

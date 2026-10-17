@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/events"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/events"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // fakeRecorderPublisher records published events thread-safely.

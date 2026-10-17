@@ -2,7 +2,7 @@
 
 - **Goal**: 24/7 TV broadcast stream app ("mulai otomatis" — continuous automated broadcast).
 - **Stack**:
-  - Go 1.27 (`tv-stream` module)
+  - Go 1.27 (`niracast` module)
   - `modernc.org/sqlite` (pure Go, `CGO_ENABLED=0`)
   - FFmpeg / ffprobe
   - `hls.js` + vanilla JS dashboard
@@ -12,7 +12,7 @@
   - Web Dashboard: `http://localhost:8080`
 - **Environment Variables**:
   - `ADDR`: Server listen address (default `:8080`)
-  - `DB_PATH`: SQLite database file path (default `/data/tv-stream.db`)
+  - `DB_PATH`: SQLite database file path (default `/data/niracast.db`)
   - `MEDIA_DIR`: Media directory (default `/media`)
   - `TRANSCODE_DIR`: Temporary HLS transcode directory (default `/transcode`)
   - `STATIC_DIR`: Frontend static files directory (default `web/static`)

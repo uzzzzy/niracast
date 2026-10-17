@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func TestRollup_And_Retention(t *testing.T) {

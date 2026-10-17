@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"tv-stream/internal/models"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/models"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 const (
@@ -97,7 +97,7 @@ type EPGCalculator interface {
 
 // GenerateEPG builds the XMLTV document for the next 24h.
 func GenerateEPG(channels []models.Channel, calc EPGCalculator, load timeline.Loader, now time.Time) ([]byte, error) {
-	doc := xmltvDoc{Generator: "tv-stream"}
+	doc := xmltvDoc{Generator: "niracast"}
 	for _, c := range channels {
 		doc.Channels = append(doc.Channels, xmltvChannel{ID: channelXMLID(c.ID), DisplayName: c.Name})
 	}

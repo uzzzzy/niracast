@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func parseTime(s string) time.Time {

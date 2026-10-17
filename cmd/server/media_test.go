@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func TestListMedia_FieldsAndOrdering(t *testing.T) {

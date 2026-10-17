@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"tv-stream/internal/analytics"
-	"tv-stream/internal/events"
-	"tv-stream/internal/stream"
+	"github.com/uzzzzy/niracast/internal/analytics"
+	"github.com/uzzzzy/niracast/internal/events"
+	"github.com/uzzzzy/niracast/internal/stream"
 )
 
 type statusItemResponse struct {

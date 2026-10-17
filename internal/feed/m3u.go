@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"tv-stream/internal/models"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/models"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // Handler serves the IPTV feed endpoints.

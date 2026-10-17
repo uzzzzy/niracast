@@ -1,7 +1,7 @@
 # Agent Guide (`AGENTS.md`)
 
 ## Project Overview
-`tv-stream` is an automated 24/7 linear TV broadcast stream server ("mulai otomatis") built with Go 1.27, SQLite, and FFmpeg, delivering continuous HLS streams with on-demand transcoding.
+`niracast` is an automated 24/7 linear TV broadcast stream server ("mulai otomatis") built with Go 1.27, SQLite, and FFmpeg, delivering continuous HLS streams with on-demand transcoding.
 
 ## Orientation
 Always read these first before starting any task:

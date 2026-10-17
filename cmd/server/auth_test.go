@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"tv-stream/internal/api"
-	"tv-stream/internal/auth"
+	"github.com/uzzzzy/niracast/internal/api"
+	"github.com/uzzzzy/niracast/internal/auth"
 )
 
 func TestAuth_HandlerLevelChannelProtection(t *testing.T) {

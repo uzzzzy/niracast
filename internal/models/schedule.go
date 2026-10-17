@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // ErrInvalidSlot is returned when slot parameters fail validation.

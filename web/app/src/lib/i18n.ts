@@ -633,7 +633,7 @@ export function getLanguage(): Language {
     }
   }
 
-  return 'id';
+  return 'en';
 }
 
 export function setLanguage(lang: Language): void {
@@ -643,7 +643,7 @@ export function setLanguage(lang: Language): void {
     // Ignore storage errors
   }
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('tvstream-lang-change', { detail: lang }));
+    window.dispatchEvent(new CustomEvent('niracast-lang-change', { detail: lang }));
   }
 }
 
@@ -679,8 +679,8 @@ export function useTranslation() {
       const custom = e as CustomEvent<Language>;
       setLangState(custom.detail || getLanguage());
     };
-    window.addEventListener('tvstream-lang-change', handler);
-    return () => window.removeEventListener('tvstream-lang-change', handler);
+    window.addEventListener('niracast-lang-change', handler);
+    return () => window.removeEventListener('niracast-lang-change', handler);
   }, []);
 
   const changeLang = useCallback((newLang: Language) => {

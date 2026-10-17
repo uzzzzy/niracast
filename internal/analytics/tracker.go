@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"tv-stream/internal/auth"
+	"github.com/uzzzzy/niracast/internal/auth"
 )
 
 type countingResponseWriter struct {
@@ -128,7 +128,7 @@ func (t *Tracker) dailySalt(at time.Time) string {
 	if t.saltDate != dateStr || t.saltHex == "" {
 		b := make([]byte, 16)
 		if _, err := rand.Read(b); err != nil {
-			t.saltHex = "tvstream-salt-" + dateStr
+			t.saltHex = "niracast-salt-" + dateStr
 		} else {
 			t.saltHex = hex.EncodeToString(b)
 		}

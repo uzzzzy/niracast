@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"tv-stream/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/ingest"
 )
 
 // scanLoop indexes the media directory now and then every interval using the MediaScanner guard.
