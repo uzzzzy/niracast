@@ -68,6 +68,24 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Styling: High-contrast focus rings, oversized typography, safe area padding (`env(safe-area-inset-*)`), and TV CSS variables in `src/index.css`.
   - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test` (151 unit/integration tests passing), and `pnpm build` passed; all backend Go tests passed. TV profile detection, remote key mapping, spatial nav, and volume persistence verified.
   - Unverified & gaps: Real Tizen and webOS remote keycodes and TV browser performance remain unverified on physical hardware; stray digit overlay '# 6 / CHANNEL 6' was observed once transiently after sending ArrowLeft x2 + Enter via browser automation (slated for investigation in Phase 8).
+- **Phase 8 Mobile UI Completed** (`feature/mobile-ui`):
+  - Device detection (`web/app/src/lib/device.ts`): Expanded `getDeviceProfile` to detect mobile devices (touch-capable phones/tablets via UA regex or coarse pointer + viewport width < 768px), `?ui=mobile` query param override persisted to `localStorage` under `'ui'`, and TV priority precedence. Added unit tests with authentic iPhone/Android/iPad user-agent strings.
+  - Pure gesture detection & bottom-sheet kinematics (`web/app/src/lib/gestures.ts`): Implemented `detectSwipe`, `calculateRubberBand`, `isTap`, `useSwipeGesture`, and `useBottomSheetDrag` hooks with transform-only animations, pointer events, velocity/threshold detection, and reduced-motion adherence.
+  - Mobile viewer page & HUD (`web/app/src/pages/ViewerPage.tsx`, `web/app/src/features/viewer`):
+    - Replaced 100vh with 100dvh and integrated CSS safe-area insets (`env(safe-area-inset-*)`).
+    - Added `playsInline` and `webkit-playsinline` attributes to video element, preventing forced fullscreen on iOS.
+    - Added single-tap to toggle HUD, double-tap left half to toggle mute with toast, double-tap right half to toggle fullscreen.
+    - Vertical swipe up/down switches channels relative to current channel.
+    - Converted `ChannelDrawer` and `ProgramGuideSheet` into interactive mobile bottom sheets with drag handles and swipe-down-to-close behavior.
+    - Minimum 44px touch targets on HUD buttons and bottom sheet items; volume slider hidden on mobile touch devices; feature-detected PiP and Fullscreen buttons hidden when unsupported (e.g. iOS Safari).
+  - Mobile admin interface (`web/app/src/features/admin`):
+    - Added fixed bottom navigation tab bar for mobile viewports while keeping sidebar for desktop.
+    - Implemented responsive card stacking for Channels and Media tables via semantic CSS `block md:table`, `block md:table-row`, preventing horizontal scroll down to 320px width.
+    - Configured `@dnd-kit/core` `TouchSensor` with 250ms delay and 5px tolerance in `PlaylistEditorPage`, enabling touch drag reordering without conflicting with page scrolling.
+  - Guardrails & i18n: Added id/en translations for new mobile strings (`drag_handle`, `swipe_channel_switch`, `double_tap_mute`, `double_tap_fullscreen`); `motionGuard.test.ts` verified viewer bundle remains completely independent of the `motion` package.
+  - Verified: `pnpm run check` (Biome, 73 files passed), `pnpm run typecheck` (tsc clean), `pnpm run test` (180 tests across 21 test suites passed), `pnpm run build` (viewer bundle 52.88 kB, admin bundle 418.74 kB, zero motion imports in viewer). Responsive layouts verified down to 320px, 375px, 390px, 414px, 430px, and mobile landscape. The earlier transient stray digit overlay ('# 6 / CHANNEL 6') was investigated and not reproduced.
+  - Unverified & notes: Real iOS Safari and Android Chrome behavior, native physical haptics (`navigator.vibrate`), and orientation change on real devices remain unverified. Note that the `?ui=` override persists in `localStorage` per origin, which can make a desktop browser stay in tv/mobile mode until `?ui=desktop` is used.
+
 
 
 

@@ -51,6 +51,14 @@
   - Remote key map: Normalized Smart TV remote keycodes (D-pad arrows, OK, Return/Back, ChannelUp/Down, VolumeUp/Down, 0-9 numeric keypad, color buttons) into semantic actions in `src/lib/remoteKeys.ts`.
   - Volume & mute persistence: Volume and muted states are persisted to `localStorage` (`tv_stream_volume`, `tv_stream_muted`) so remounted video elements on channel switches preserve user volume level.
   - TV UI components: Built dedicated 10-foot components (`ChannelRailTv`, `DigitEntryOverlay`, `RemoteLegendModal`, `VolumeToast`) maintaining contrast and high visibility without obstructing video playout.
+- **Phase 8 Mobile UI Decisions**:
+  - Mobile profile detection & override persistence: `getDeviceProfile` detects mobile profiles via user-agent regex or coarse pointer (`pointer: coarse`) and narrow viewports (<768px). Supports URL parameter overrides `?ui=mobile|tv|desktop` (with backwards compatibility for `?profile=tv`). Stored in `localStorage` under key `'ui'`. Note: Because this override persists in `localStorage` per origin, a desktop browser tested with `?ui=mobile` or `?ui=tv` stays in that mode until explicitly cleared or overridden with `?ui=desktop`. TV detection takes precedence over mobile when both might match.
+  - Zero-dependency pure gesture engine: Implemented custom gesture recognition in `src/lib/gestures.ts` (`detectSwipe`, `calculateRubberBand`, `isTap`, `useSwipeGesture`, `useBottomSheetDrag`) using native Pointer Events, transform-only GPU animations, velocity/threshold detection, and reduced-motion compliance without external gesture dependencies.
+  - Bottom sheets over side drawers: Transformed `ChannelDrawer` and `ProgramGuideSheet` into interactive mobile bottom sheets with drag handles and touch swipe-down-to-dismiss behavior on mobile viewports, while preserving desktop sidebar drawer layouts on wide screens.
+  - Mobile admin ergonomics: Added a fixed bottom navigation tab bar (`AdminBottomBar`) on mobile viewports for quick thumb-reach navigation; refactored Channels and Media data tables into stacked responsive cards (`block md:table`, `block md:table-row`) to eliminate horizontal scroll down to 320px width.
+  - Touch drag reordering: Configured `@dnd-kit/core` with `TouchSensor` (250ms delay, 5px tolerance) in `PlaylistEditorPage`, enabling touch drag reordering without conflicting with vertical page scrolling.
+  - Mobile video inline playback: Added `playsInline` and `webkit-playsinline` attributes to the viewer `<video>` element, preventing mobile Safari and Android browsers from hijacking playback into native fullscreen, preserving custom HUD overlay controls.
+
 
 
 
