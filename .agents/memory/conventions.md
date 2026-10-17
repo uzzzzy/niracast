@@ -11,7 +11,7 @@
   - Never claim a task or change is done without executing and passing the verification gate.
 - **Git Hygiene**:
   - `media/`, `data/`, `.env`, `*.db`, and `*.exe` are git-ignored.
-  - Commits are made via git on branch `main`.
+  - Git Flow applies (`develop` for work, `main` for releases, no direct main commits; see `docs/GIT_FLOW.md`).
   - Never push to remote or configure remote sync without explicit user consent.
 - **Language Policy**:
   - Code, identifiers, comments, and documentation must be written in English (short natural Indonesian notes allowed where appropriate).

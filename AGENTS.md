@@ -17,5 +17,9 @@ go test ./...                  # Run all unit and integration tests
 go vet ./...                   # Run code vetting and static checks
 ```
 
+## Git Flow
+This repository follows Git Flow (`main`, `develop`, `feature/*`, `fix/*`, `release/*`, `hotfix/*`). See [docs/GIT_FLOW.md](docs/GIT_FLOW.md).
+Run `git config core.hooksPath .githooks` after cloning to activate pre-commit quality gates.
+
 ## Work Logging Rule
 Append a dated summary of completed changes to `.agents/memory/log.md` at the conclusion of every work session.

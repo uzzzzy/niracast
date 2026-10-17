@@ -6,3 +6,4 @@
 - **Lazy On-Demand Streaming**: FFmpeg processes start lazily on the first manifest request (`.m3u8`) at the calculated wall-clock offset, and are automatically reaped by `SessionManager` when idle.
 - **RAM Segment Storage**: Placed `/transcode` on a 1GB `tmpfs` volume to protect SSD wear from high-frequency HLS segment creation and deletion.
 - **MAKER Methodology**: Used the MAKER framework (atomised micro-tasks, strict verification gates, red-flag abort conditions) for the initial system construction.
+- **Git Flow Branching Model**: Adopted Git Flow (`main` for tagged releases, `develop` for integration, short-lived feature/fix/release/hotfix branches) with `.githooks/pre-commit` enforcement (`gofmt`, `go vet`, `go build`, and blocking direct commits on `main`).
