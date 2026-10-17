@@ -25,6 +25,7 @@ interface HudOverlayProps {
   volume: number;
   isFullscreen: boolean;
   needsUnmute: boolean;
+  isTv?: boolean;
   onToggleMute: () => void;
   onVolumeChange: (val: number) => void;
   onToggleFullscreen: () => void;
@@ -46,6 +47,7 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
   volume,
   isFullscreen,
   needsUnmute,
+  isTv = false,
   onToggleMute,
   onVolumeChange,
   onToggleFullscreen,
@@ -71,7 +73,9 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
       <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-black/95 via-black/60 to-transparent pointer-events-none" />
 
       {/* Top Header */}
-      <header className="relative z-10 flex items-center justify-between p-6">
+      <header
+        className={`relative z-10 flex items-center justify-between p-6 ${isTv ? 'tv-safe-area' : ''}`}
+      >
         <div className="flex items-center gap-3">
           <div className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-4 py-2 shadow-lg">
             <span className="font-mono text-sm font-bold text-[#0A84FF]">#{channel.number}</span>
@@ -115,9 +119,10 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
         <div className="relative z-10 flex justify-center py-4 pointer-events-auto">
           <button
             type="button"
+            data-focusable
             onClick={onUnmuteTap}
             aria-label={t('tap_to_unmute')}
-            className="flex min-h-[44px] items-center gap-2.5 rounded-full border border-white/20 bg-[#16161B]/95 px-6 py-2.5 text-sm font-medium text-white shadow-2xl transition hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+            className={`flex min-h-[44px] items-center gap-2.5 rounded-full border border-white/20 bg-[#16161B]/95 px-6 py-2.5 text-sm font-medium text-white shadow-2xl transition hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
           >
             <VolumeX className="h-4 w-4 text-[#0A84FF]" />
             <span>{t('tap_to_unmute')}</span>
@@ -126,7 +131,10 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
       )}
 
       {/* Bottom HUD */}
-      <footer className="relative z-10 p-6 space-y-4">
+      <footer
+        data-nav-group="hud"
+        className={`relative z-10 p-6 space-y-4 ${isTv ? 'tv-safe-area' : ''}`}
+      >
         {/* Info & Progress */}
         <div className="space-y-2">
           <div className="flex items-baseline justify-between text-xs text-[#8E8E93]">
@@ -178,9 +186,10 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
             <div className="flex items-center rounded-2xl border border-white/10 bg-[#16161B]/90 px-1 py-0.5 shadow-lg">
               <button
                 type="button"
+                data-focusable
                 onClick={onToggleMute}
                 aria-label={isMuted ? t('unmute') : t('mute')}
-                className="flex h-11 w-11 items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+                className={`flex h-11 w-11 items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
               >
                 {isMuted || volume === 0 ? (
                   <VolumeX className="h-5 w-5" />
@@ -204,29 +213,35 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
             {/* Program Guide Button */}
             <button
               type="button"
+              data-focusable
               onClick={onOpenGuide}
               aria-label={t('program_guide')}
-              className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              className={`flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
             >
               <Calendar className="h-4 w-4 text-[#0A84FF]" />
               <span className="hidden sm:inline">{t('program_guide')}</span>
-              <kbd className="hidden sm:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
-                G
-              </kbd>
+              {!isTv && (
+                <kbd className="hidden sm:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
+                  G
+                </kbd>
+              )}
             </button>
 
             {/* Channels Button */}
             <button
               type="button"
+              data-focusable
               onClick={onOpenChannels}
               aria-label={t('channels')}
-              className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              className={`flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
             >
               <Tv className="h-4 w-4 text-[#0A84FF]" />
               <span className="hidden sm:inline">{t('channels')}</span>
-              <kbd className="hidden sm:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
-                C
-              </kbd>
+              {!isTv && (
+                <kbd className="hidden sm:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
+                  C
+                </kbd>
+              )}
             </button>
           </div>
 
@@ -234,27 +249,30 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              data-focusable
               onClick={onOpenShortcuts}
-              aria-label={t('shortcuts_help')}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              aria-label={isTv ? t('remote_legend_title') : t('shortcuts_help')}
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
             >
               <HelpCircle className="h-5 w-5" />
             </button>
 
             <button
               type="button"
+              data-focusable
               onClick={onTogglePip}
               aria-label={t('pip')}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
             >
               <PictureInPicture2 className="h-5 w-5" />
             </button>
 
             <button
               type="button"
+              data-focusable
               onClick={onToggleFullscreen}
               aria-label={isFullscreen ? t('exit_fullscreen') : t('fullscreen')}
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${isTv ? 'tv-pill-button' : ''}`}
             >
               {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
             </button>

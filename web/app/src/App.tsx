@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
+import { useUiProfile } from './lib/device';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -7,6 +8,8 @@ const ViewerPage = React.lazy(() => import('./pages/ViewerPage'));
 const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
 export function App() {
+  useUiProfile();
+
   return (
     <Suspense
       fallback={

@@ -50,6 +50,22 @@ export const translations = {
     now: 'Sekarang',
     no_epg: 'Tidak ada jadwal acara',
 
+    // TV Remote Legend & OSD
+    remote_legend_title: 'Panduan Remote',
+    remote_up_down: 'Ganti saluran',
+    remote_left_right: 'Atur volume (-/+ 5%)',
+    remote_ok: 'Buka menu kontrol / Pilih',
+    remote_back: 'Tutup panel / menu',
+    remote_digits: 'Lompat ke nomor saluran',
+    remote_play_pause: 'Bisukan siaran (Live TV tidak bisa dijeda)',
+    remote_info: 'Tampilkan / sembunyikan info siaran',
+    remote_guide: 'Buka panduan acara',
+    channel_number_input: 'Saluran {number}',
+    no_such_channel: 'Saluran tidak ditemukan',
+    live_cannot_pause: 'Siaran langsung tidak dapat dijeda',
+    muted_chip: 'Dibisukan',
+    unmuted_chip: 'Bunyi aktif',
+
     // CMS Studio Auth
     login_title: 'Studio Masuk',
     login_subtitle: 'Masukkan kata sandi administrator untuk mengelola siaran.',
@@ -240,6 +256,22 @@ export const translations = {
     motion_tooltip: 'Motion Mode: {mode}',
     now: 'Now',
     no_epg: 'No schedule available',
+
+    // TV Remote Legend & OSD
+    remote_legend_title: 'Remote Control Guide',
+    remote_up_down: 'Change channel',
+    remote_left_right: 'Adjust volume (-/+ 5%)',
+    remote_ok: 'Open controls menu / Select',
+    remote_back: 'Close panel / menu',
+    remote_digits: 'Jump to channel number',
+    remote_play_pause: 'Mute broadcast (Live TV cannot pause)',
+    remote_info: 'Toggle broadcast info',
+    remote_guide: 'Open program guide',
+    channel_number_input: 'Channel {number}',
+    no_such_channel: 'No such channel',
+    live_cannot_pause: 'Live TV cannot be paused',
+    muted_chip: 'Muted',
+    unmuted_chip: 'Unmuted',
 
     // CMS Studio Auth
     login_title: 'Studio Login',
