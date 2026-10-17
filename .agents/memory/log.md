@@ -36,6 +36,14 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Configured multi-stage `Dockerfile` with `node:22-alpine` web stage using BuildKit pnpm store cache.
   - Isolated Vite build output to `web/app/dist/app` to preserve tracked `web/app/dist/.gitkeep` placeholder across Vite `emptyOutDir`, ensuring clean git clones can build Go binaries without Node.js.
   - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm build` passed; all Go unit/integration tests passed; clean-clone `go build` passed without Node; multi-stage Docker build passed (211MB image); live SPA routing and browser rendering of `/watch/1` verified with zero regressions. Legacy dashboard remains accessible at `/static/`.
+- **Phase 4 Dedicated HLS Viewer Page & EPG Completed** (`feature/viewer-page`):
+  - Backend EPG endpoint: Implemented `GET /api/v1/channels/{id}/epg` with `count=1..20` (default 5), real wall-clock `start_at`/`end_at` calculation aware of supervisor skip offsets, and empty playlist idle card indicator (`idle: true`).
+  - Timeline Upcoming: Added `Upcoming()` and `ComputeUpcoming()` in `internal/timeline` to resolve contiguous looping playlist schedules. Updated `internal/auth/matrix.go` to permit public access.
+  - Dedicated viewer feature module (`web/app/src/features/viewer`): Built custom `useHlsPlayer` hook with element-in-state binding, exponential backoff (1s..15s), fatal error recreation, and audio codec swap recovery. Built HUD overlay with 3s auto-hide, sliding channel drawer, program guide sheet, idle slate card, and keyboard shortcuts modal.
+  - Controls & i18n: Added keyboard controls (M, F, P, G, C, arrows, PageUp/PageDown, channel number digits, Esc, ?) and id/en i18n via `src/lib/i18n.ts`.
+  - Vite optimization: Isolated `hls.js` into a dedicated vendor chunk (`hls`).
+  - Verified: Go tests and vetting passed; frontend checks (`pnpm check`, `typecheck`, `test`, `build`) passed; real browser verification confirmed 1280x720 HLS playback, late-mount ref fix, HUD auto-hide, channel drawer navigation, EPG guide sheet, and idle card rendering.
+
 
 
 
