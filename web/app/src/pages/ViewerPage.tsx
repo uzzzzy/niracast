@@ -710,9 +710,9 @@ export default function ViewerPage() {
 
   if (channelLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B0B0E] text-[#8E8E93]">
+      <div className="scheme-dark flex min-h-screen items-center justify-center bg-surface-0 text-fg-muted">
         <div className="flex items-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-[#0A84FF]" />
+          <Loader2 className="h-5 w-5 animate-spin text-accent" />
           <span className="text-sm">{t('loading_channel')}</span>
         </div>
       </div>
@@ -721,12 +721,12 @@ export default function ViewerPage() {
 
   if (channelError || !channel) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0B0B0E] p-6 text-center text-[#F5F5F7]">
-        <h1 className="text-xl font-semibold">{t('channel_not_found')}</h1>
-        <p className="mt-2 text-sm text-[#8E8E93]">{t('channel_not_found_desc')}</p>
+      <div className="scheme-dark flex min-h-screen flex-col items-center justify-center bg-surface-0 p-6 text-center text-fg">
+        <h1 className="text-xl font-semibold text-fg">{t('channel_not_found')}</h1>
+        <p className="mt-2 text-sm text-fg-muted">{t('channel_not_found_desc')}</p>
         <Link
           to="/"
-          className="mt-6 inline-flex min-h-[44px] items-center rounded-xl bg-[#0A84FF] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+          className="mt-6 inline-flex min-h-[44px] items-center rounded-control bg-accent px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent/90 focus:outline-none"
         >
           {t('back_to_channels')}
         </Link>
@@ -741,7 +741,7 @@ export default function ViewerPage() {
       ref={containerRef}
       onPointerMove={resetHudTimer}
       onPointerDown={resetHudTimer}
-      className={`fixed inset-0 h-[100dvh] w-full overflow-hidden bg-black select-none ${
+      className={`scheme-dark fixed inset-0 h-[100dvh] w-full overflow-hidden bg-black select-none ${
         isTv ? 'cursor-none' : isHudVisible ? 'cursor-default' : 'cursor-none'
       }`}
     >
@@ -771,13 +771,13 @@ export default function ViewerPage() {
       {isSwitching && (bumpChannel || channel) && (
         <div
           data-testid="channel-bump"
-          className="pointer-events-none fixed top-1/2 left-1/2 z-30 animate-channel-bump flex items-center gap-3 rounded-2xl border border-white/20 bg-[#16161B]/95 px-6 py-4 shadow-2xl"
+          className="pointer-events-none fixed top-1/2 left-1/2 z-30 animate-channel-bump flex items-center gap-3 rounded-card border border-hairline glass-hud px-6 py-4 shadow-2"
         >
-          <span className="font-mono text-2xl font-bold text-[#0A84FF]">
+          <span className="font-mono text-2xl font-bold text-accent timecode">
             #{(bumpChannel || channel).number}
           </span>
-          <span className="h-6 w-px bg-white/20" />
-          <span className="text-xl font-semibold tracking-wide text-white">
+          <span className="h-6 w-px bg-hairline" />
+          <span className="text-xl font-semibold tracking-wide text-fg">
             {(bumpChannel || channel).name}
           </span>
         </div>
@@ -789,8 +789,8 @@ export default function ViewerPage() {
           data-testid="player-loading"
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/60 transition-opacity"
         >
-          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-[#16161B]/90 px-5 py-3 text-sm text-white shadow-xl">
-            <Loader2 className="h-5 w-5 animate-spin text-[#0A84FF]" />
+          <div className="flex items-center gap-3 rounded-card border border-hairline glass-hud px-5 py-3 text-sm text-fg shadow-1">
+            <Loader2 className="h-5 w-5 animate-spin text-accent" />
             <span>{t('loading_broadcast')}</span>
           </div>
         </div>
@@ -800,9 +800,9 @@ export default function ViewerPage() {
       {phase === 'buffering' && (
         <div
           data-testid="player-buffering"
-          className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full border border-white/10 bg-[#16161B]/80 px-4 py-1.5 text-xs text-white shadow-lg"
+          className="pointer-events-none absolute top-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-full border border-hairline glass-hud px-4 py-1.5 text-xs text-fg shadow-1"
         >
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#0A84FF]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
           <span>{t('buffering')}</span>
         </div>
       )}
@@ -813,17 +813,17 @@ export default function ViewerPage() {
           data-testid="player-error"
           className="absolute inset-0 z-30 flex items-center justify-center p-6 bg-black/80"
         >
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#16161B]/95 p-6 text-center text-[#F5F5F7] shadow-2xl">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20">
+          <div className="w-full max-w-sm rounded-sheet border border-hairline glass-hud p-6 text-center text-fg shadow-2">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-card bg-danger/15 text-danger border border-danger/30">
               <AlertCircle className="h-6 w-6" />
             </div>
             <h2 className="text-base font-semibold">{t('playback_error')}</h2>
-            <p className="mt-1 text-xs text-[#8E8E93]">{errorMessage || t('playback_error')}</p>
+            <p className="mt-1 text-xs text-fg-muted">{errorMessage || t('playback_error')}</p>
             <button
               type="button"
               data-focusable
               onClick={retry}
-              className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[#0A84FF] px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+              className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-control bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/90 focus:outline-none"
             >
               <RotateCcw className="h-4 w-4" />
               <span>{t('retry')}</span>
@@ -832,9 +832,9 @@ export default function ViewerPage() {
         </div>
       )}
 
-      {/* Idle State Lower-Third Card */}
+      {/* Idle State Full-Bleed Slate */}
       {isIdle && (
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div className="absolute inset-0 z-20 pointer-events-none">
           <IdleCard channelName={channel.name} />
         </div>
       )}

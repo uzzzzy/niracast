@@ -40,19 +40,19 @@ export const RemoteLegendModal: React.FC<RemoteLegendModalProps> = ({ isOpen, on
 
       <div
         role="document"
-        className="relative z-10 w-full max-w-lg rounded-3xl border border-white/20 bg-[#16161B]/95 p-8 shadow-2xl text-[#F5F5F7]"
+        className="relative z-10 w-full max-w-lg rounded-sheet border border-hairline glass-thick p-8 shadow-2 text-fg"
       >
-        <div className="flex items-center justify-between pb-6 border-b border-white/10">
+        <div className="flex items-center justify-between pb-6 border-b border-hairline">
           <div className="flex items-center gap-3">
-            <Tv className="h-7 w-7 text-[#0A84FF]" />
-            <h2 className="text-xl font-bold">{t('remote_legend_title')}</h2>
+            <Tv className="h-7 w-7 text-accent" />
+            <h2 className="large-title text-fg">{t('remote_legend_title')}</h2>
           </div>
           <button
             type="button"
             data-focusable
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-14 w-14 items-center justify-center rounded-2xl text-neutral-300 hover:text-white hover:bg-white/10 focus:outline-none"
+            className="flex h-14 w-14 items-center justify-center rounded-control text-fg-muted hover:text-fg hover:bg-surface-3 focus:outline-none"
           >
             <X className="h-7 w-7" />
           </button>
@@ -62,10 +62,10 @@ export const RemoteLegendModal: React.FC<RemoteLegendModalProps> = ({ isOpen, on
           {legendItems.map((item) => (
             <div
               key={item.key}
-              className="flex items-center justify-between py-3 px-4 rounded-xl bg-white/5 text-base"
+              className="flex items-center justify-between py-3 px-4 rounded-tile bg-surface-2/60 border border-hairline text-base"
             >
-              <span className="text-[#8E8E93]">{item.desc}</span>
-              <kbd className="rounded-xl border border-white/20 bg-black/60 px-3 py-1 font-mono text-sm font-bold text-white shadow">
+              <span className="text-fg-muted">{item.desc}</span>
+              <kbd className="rounded-control border border-hairline bg-surface-3 px-3 py-1 font-mono text-sm font-bold text-fg timecode shadow-1">
                 {item.key}
               </kbd>
             </div>

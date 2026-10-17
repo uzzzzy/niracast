@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { AdminShell } from '../features/admin/components/AdminShell';
+import { AmbientBackground } from '../features/admin/components/AmbientBackground';
 import { LoginCard } from '../features/admin/components/LoginCard';
 import { ChannelsPage } from '../features/admin/pages/ChannelsPage';
 import { MediaPage } from '../features/admin/pages/MediaPage';
@@ -77,8 +78,9 @@ export default function AdminPage() {
 
   if (isAuthLoading || isAuthenticated === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B0B0E] text-neutral-400">
-        <Loader2 className="h-6 w-6 animate-spin text-[#0A84FF]" />
+      <div className="relative flex min-h-screen items-center justify-center bg-surface-0 text-fg-muted">
+        <AmbientBackground />
+        <Loader2 className="relative z-10 h-6 w-6 animate-spin text-accent" />
       </div>
     );
   }
@@ -107,13 +109,13 @@ export default function AdminPage() {
           className="min-h-full"
         >
           <Routes location={location}>
-            <Route index element={<Navigate to="overview" replace />} />
+            <Route index element={<Navigate to="/admin/overview" replace />} />
             <Route path="overview" element={<OverviewPage />} />
             <Route path="channels" element={<ChannelsPage />} />
             <Route path="channels/:id" element={<PlaylistEditorPage />} />
             <Route path="media" element={<MediaPage />} />
             <Route path="system" element={<SystemPage />} />
-            <Route path="*" element={<Navigate to="overview" replace />} />
+            <Route path="*" element={<Navigate to="/admin/overview" replace />} />
           </Routes>
         </motion.div>
       </AnimatePresence>

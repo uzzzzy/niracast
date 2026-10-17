@@ -42,16 +42,16 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
 
       <div
         role="document"
-        className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-[#16161B]/95 p-6 shadow-2xl text-[#F5F5F7]"
+        className="relative z-10 w-full max-w-md rounded-sheet border border-hairline glass-thick p-6 shadow-2 text-fg"
       >
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
-          <h2 className="text-base font-semibold">{t('shortcuts_title')}</h2>
+        <div className="flex items-center justify-between pb-4 border-b border-hairline">
+          <h2 className="title text-fg">{t('shortcuts_title')}</h2>
           <button
             type="button"
             data-focusable
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
+            className="flex h-9 w-9 items-center justify-center rounded-control text-fg-muted hover:text-fg hover:bg-surface-3 focus:outline-none"
           >
             <X className="h-5 w-5" />
           </button>
@@ -61,10 +61,10 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
           {shortcuts.map((s) => (
             <div
               key={s.key}
-              className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-white/5 text-sm"
+              className="flex items-center justify-between py-1.5 px-2.5 rounded-tile bg-surface-2/60 border border-hairline text-sm"
             >
-              <span className="text-[#8E8E93]">{s.desc}</span>
-              <kbd className="rounded border border-white/20 bg-black/40 px-2 py-0.5 text-xs font-mono font-semibold text-white">
+              <span className="text-fg-muted">{s.desc}</span>
+              <kbd className="rounded-control bg-surface-3 border border-hairline px-2 py-0.5 text-xs font-mono font-semibold text-fg timecode">
                 {s.key}
               </kbd>
             </div>

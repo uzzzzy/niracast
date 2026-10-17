@@ -9,9 +9,10 @@ import {
   VolumeX,
 } from 'lucide-react';
 import type React from 'react';
+import { Button, StatusPill } from '../../../components/ui';
 import type { Channel, ChannelStatus, EpgItem } from '../../../lib/api';
 import { t } from '../../../lib/i18n';
-import { formatCountdown } from '../utils';
+import { formatTimecode } from '../utils';
 
 interface HudOverlayProps {
   isVisible: boolean;
@@ -85,136 +86,140 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 sm:px-4 py-2 shadow-lg">
-            <span className="font-mono text-sm font-bold text-[#0A84FF]">#{channel.number}</span>
-            <span className="h-3 w-px bg-white/20" />
-            <h1 className="text-xs sm:text-sm font-semibold tracking-wide text-white truncate max-w-[140px] sm:max-w-xs">
+          <div className="flex h-11 items-center gap-2 rounded-control border border-hairline glass-hud px-3.5 sm:px-4 py-2 shadow-1">
+            <span className="font-mono text-sm font-bold text-accent timecode">
+              #{channel.number}
+            </span>
+            <span className="h-3 w-px bg-hairline" />
+            <span className="text-xs sm:text-sm font-semibold tracking-wide text-fg truncate max-w-[140px] sm:max-w-xs">
               {channel.name}
-            </h1>
+            </span>
           </div>
 
           {isReconnecting && (
             <div
               data-testid="reconnecting-chip"
-              className="flex h-8 items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-300 shadow-md"
+              className="flex h-8 items-center gap-1.5 rounded-full border border-idle/30 bg-idle/15 px-3 py-1 text-xs font-medium text-idle shadow-1"
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-idle animate-pulse" />
               <span className="hidden sm:inline">{t('reconnecting')}</span>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-3">
-          {isIdle ? (
-            <div
-              data-testid="idle-badge"
-              className="flex h-8 items-center rounded-full border border-white/15 bg-neutral-800/90 px-3 text-xs font-semibold uppercase tracking-wider text-neutral-300 shadow-md"
-            >
-              {t('idle')}
-            </div>
-          ) : (
-            <div
-              data-testid="live-badge"
-              className="flex h-8 items-center gap-1.5 rounded-full border border-[#30D158]/30 bg-emerald-950/90 px-3 text-xs font-semibold uppercase tracking-wider text-[#30D158] shadow-md"
-            >
-              <span className="h-2 w-2 rounded-full bg-[#30D158] animate-live-pulse" />
-              {t('live')}
-            </div>
-          )}
+          <StatusPill
+            status={isIdle ? 'idle' : 'onair'}
+            data-testid={isIdle ? 'idle-badge' : 'live-badge'}
+          >
+            {isIdle ? t('idle') : t('live')}
+          </StatusPill>
         </div>
       </header>
 
       {/* Center Action: Tap to Unmute */}
       {needsUnmute && (
         <div className="relative z-10 flex justify-center py-4 pointer-events-auto">
-          <button
-            type="button"
+          <Button
+            variant="glass"
+            size="lg"
             data-focusable
             onClick={onUnmuteTap}
             aria-label={t('tap_to_unmute')}
-            className={`flex min-h-[44px] items-center gap-2.5 rounded-full border border-white/20 bg-[#16161B]/95 px-6 py-2.5 text-sm font-medium text-white shadow-2xl transition hover:bg-[#22222A] focus:outline-none ${
-              isTv ? 'tv-pill-button' : ''
-            }`}
+            className={`gap-2.5 rounded-full ${isTv ? 'tv-pill-button' : ''}`}
           >
-            <VolumeX className="h-4 w-4 text-[#0A84FF]" />
+            <VolumeX className="h-4 w-4 text-accent" />
             <span>{t('tap_to_unmute')}</span>
-          </button>
+          </Button>
         </div>
       )}
 
-      {/* Bottom HUD */}
+      {/* Bottom HUD Bar */}
       <footer
         data-nav-group="hud"
-        className={`relative z-10 p-4 sm:p-6 pb-[max(env(safe-area-inset-bottom),1rem)] pl-[max(env(safe-area-inset-left),1rem)] pr-[max(env(safe-area-inset-right),1rem)] space-y-3 sm:space-y-4 ${
+        className={`absolute bottom-6 left-6 right-6 mobile:bottom-4 mobile:left-4 mobile:right-4 tv:bottom-10 tv:left-12 tv:right-12 glass-hud rounded-sheet p-4 sm:p-5 shadow-2 pointer-events-auto space-y-3 sm:space-y-4 ${
           isTv ? 'tv-safe-area' : ''
         }`}
       >
-        {/* Info & Progress */}
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between text-xs text-[#8E8E93]">
-            <div className="flex items-center gap-2 font-medium text-white text-sm sm:text-base min-w-0">
-              <span className="text-[#8E8E93] text-xs uppercase tracking-wider shrink-0">
-                {t('now_playing')}:
-              </span>
-              <span className="truncate max-w-[160px] sm:max-w-md md:max-w-xl">
-                {nowPlayingTitle}
-              </span>
-            </div>
-
+        {/* Title and Now/Next */}
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-4">
+            <h1 className="text-base sm:text-lg font-semibold text-fg tracking-wide truncate">
+              {channel.name}
+            </h1>
             {nextItemInfo && (
-              <div className="hidden sm:flex items-center gap-1 text-xs text-[#8E8E93] font-mono">
+              <div className="hidden sm:flex items-center gap-1 text-xs text-fg-muted font-mono timecode shrink-0">
                 <span>{t('next')}:</span>
-                <span className="text-white font-medium">{nextItemInfo.title}</span>
+                <span className="text-fg font-medium">{nextItemInfo.title}</span>
                 <span>
-                  {t('in')} {formatCountdown(nextItemInfo.remainingSec)}
+                  {t('in')} {formatTimecode(nextItemInfo.remainingSec)}
                 </span>
               </div>
             )}
           </div>
 
-          {/* Thin Progress Bar (transform scaleX only) */}
-          <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/20">
+          <div className="flex items-center justify-between text-xs text-fg-muted">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="label-caps shrink-0">{t('now_playing')}:</span>
+              <span className="text-fg font-medium truncate max-w-[200px] sm:max-w-md md:max-w-xl">
+                {nowPlayingTitle}
+              </span>
+            </div>
+
+            {nextItemInfo && (
+              <div className="flex sm:hidden items-center gap-1 text-[11px] text-fg-muted font-mono timecode">
+                <span>{t('next')}:</span>
+                <span className="text-fg truncate max-w-[140px]">{nextItemInfo.title}</span>
+                <span>
+                  {t('in')} {formatTimecode(nextItemInfo.remainingSec)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Timecode progress row (elapsed / 2px track with scaleX / duration) */}
+        <div className="flex items-center gap-3 text-xs">
+          {status?.item && (
+            <span className="font-mono text-xs text-fg-subtle timecode shrink-0">
+              {formatTimecode(status.item.seek_sec)}
+            </span>
+          )}
+          <div className="relative h-0.5 w-full overflow-hidden rounded-full bg-white/20">
             <div
-              className="h-full w-full bg-[#0A84FF] transition-transform duration-300 ease-out"
+              className="h-full w-full bg-accent transition-transform duration-300 ease-out"
               style={{
                 transform: `scaleX(${progressPercent / 100})`,
                 transformOrigin: 'left',
               }}
             />
           </div>
-
-          {nextItemInfo && (
-            <div className="flex sm:hidden items-center gap-1 text-[11px] text-[#8E8E93] font-mono">
-              <span>{t('next')}:</span>
-              <span className="text-white truncate max-w-[180px]">{nextItemInfo.title}</span>
-              <span>
-                {t('in')} {formatCountdown(nextItemInfo.remainingSec)}
-              </span>
-            </div>
+          {status?.item && (
+            <span className="font-mono text-xs text-fg-subtle timecode shrink-0">
+              {formatTimecode(status.item.duration_sec)}
+            </span>
           )}
         </div>
 
         {/* Controls row */}
-        <div className="flex items-center justify-between pointer-events-auto gap-2">
+        <div className="flex items-center justify-between gap-2">
           {/* Left Controls: Volume & Guide & Channels */}
           <div className="flex items-center gap-2">
-            {/* Mute/Volume button */}
-            <div className="flex items-center rounded-2xl border border-white/10 bg-[#16161B]/90 px-1 py-0.5 shadow-lg">
-              <button
-                type="button"
+            <div className="flex items-center rounded-control border border-hairline glass px-1 py-0.5">
+              <Button
+                variant="ghost"
+                size="icon"
                 data-focusable
                 onClick={onToggleMute}
                 aria-label={isMuted ? t('unmute') : t('mute')}
-                className={`flex h-11 w-11 items-center justify-center rounded-xl text-neutral-300 hover:text-white hover:bg-white/10 focus:outline-none ${
-                  isTv ? 'tv-pill-button' : ''
-                }`}
+                className={`text-fg-muted hover:text-fg ${isTv ? 'tv-pill-button' : ''}`}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="h-5 w-5" />
+                  <VolumeX className="h-4 w-4" />
                 ) : (
-                  <Volume2 className="h-5 w-5" />
+                  <Volume2 className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
 
               <input
                 type="range"
@@ -224,91 +229,86 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
                 value={isMuted ? 0 : volume}
                 onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
                 aria-label={t('volume')}
-                className="mx-2 h-1.5 w-16 sm:w-24 cursor-pointer accent-[#0A84FF] hidden sm:block"
+                className="mx-2 h-1.5 w-16 sm:w-24 cursor-pointer accent-accent hidden sm:block"
               />
             </div>
 
             {/* Program Guide Button */}
-            <button
-              type="button"
+            <Button
+              variant="glass"
+              size="md"
               data-focusable
               onClick={onOpenGuide}
               aria-label={t('program_guide')}
-              className={`flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${
-                isTv ? 'tv-pill-button' : ''
-              }`}
+              className={`gap-2 ${isTv ? 'tv-pill-button' : ''}`}
             >
-              <Calendar className="h-4 w-4 text-[#0A84FF]" />
+              <Calendar className="h-4 w-4 text-accent" />
               <span className="hidden md:inline">{t('program_guide')}</span>
               {!isTv && !isMobile && (
-                <kbd className="hidden lg:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
+                <kbd className="hidden lg:inline rounded-control bg-surface-3 border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-fg-muted timecode">
                   G
                 </kbd>
               )}
-            </button>
+            </Button>
 
             {/* Channels Button */}
-            <button
-              type="button"
+            <Button
+              variant="glass"
+              size="md"
               data-focusable
               onClick={onOpenChannels}
               aria-label={t('channels')}
-              className={`flex h-11 min-w-[44px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-[#16161B]/90 px-3.5 text-xs font-semibold text-neutral-200 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${
-                isTv ? 'tv-pill-button' : ''
-              }`}
+              className={`gap-2 ${isTv ? 'tv-pill-button' : ''}`}
             >
-              <Tv className="h-4 w-4 text-[#0A84FF]" />
+              <Tv className="h-4 w-4 text-accent" />
               <span className="hidden md:inline">{t('channels')}</span>
               {!isTv && !isMobile && (
-                <kbd className="hidden lg:inline rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[#8E8E93]">
+                <kbd className="hidden lg:inline rounded-control bg-surface-3 border border-hairline px-1.5 py-0.5 font-mono text-[10px] text-fg-muted timecode">
                   C
                 </kbd>
               )}
-            </button>
+            </Button>
           </div>
 
-          {/* Right Controls: PiP, Fullscreen, Shortcuts */}
+          {/* Right Controls: Shortcuts, PiP, Fullscreen */}
           <div className="flex items-center gap-2">
             {!isMobile && (
-              <button
-                type="button"
+              <Button
+                variant="glass"
+                size="icon"
                 data-focusable
                 onClick={onOpenShortcuts}
                 aria-label={isTv ? t('remote_legend_title') : t('shortcuts_help')}
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${
-                  isTv ? 'tv-pill-button' : ''
-                }`}
+                className={isTv ? 'tv-pill-button' : ''}
               >
-                <HelpCircle className="h-5 w-5" />
-              </button>
+                <HelpCircle className="h-4 w-4" />
+              </Button>
             )}
 
             {isPipSupported && (
-              <button
-                type="button"
+              <Button
+                variant="glass"
+                size="icon"
                 data-focusable
                 onClick={onTogglePip}
                 aria-label={t('pip')}
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${
-                  isTv ? 'tv-pill-button' : ''
-                }`}
+                className={isTv ? 'tv-pill-button' : ''}
               >
-                <PictureInPicture2 className="h-5 w-5" />
-              </button>
+                <PictureInPicture2 className="h-4 w-4" />
+              </Button>
             )}
 
             {isFullscreenSupported && (
-              <button
-                type="button"
+              <Button
+                variant="glass"
+                size="icon"
                 data-focusable
                 onClick={onToggleFullscreen}
                 aria-label={isFullscreen ? t('exit_fullscreen') : t('fullscreen')}
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#16161B]/90 text-neutral-300 shadow-lg hover:text-white hover:bg-[#22222A] focus:outline-none ${
-                  isTv ? 'tv-pill-button' : ''
-                }`}
+                className={isTv ? 'tv-pill-button' : ''}
               >
-                {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-              </button>
+                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              </Button>
             )}
           </div>
         </div>

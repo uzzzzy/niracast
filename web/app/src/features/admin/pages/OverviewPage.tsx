@@ -1,23 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import {
-  Check,
-  Clock,
-  Copy,
-  ExternalLink,
-  Film,
-  Loader2,
-  Radio,
-  SkipForward,
-  Tv,
-} from 'lucide-react';
+import { Check, Copy, ExternalLink, Loader2, SkipForward } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import emptyChannels from '../../../assets/empty-channels.webp';
+import { Button, Card, ChannelArt, EmptyState, StatTile, StatusPill } from '../../../components/ui';
 import { ApiError, api, type Channel, type ChannelStatus } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 import { DURATION, EASE, getStaggerDelay } from '../../../lib/motion/tokens';
 import { useAdminEvents } from '../hooks/useAdminEvents';
-import { formatDuration, parseUptime } from '../utils/playlist';
+import { formatDuration } from '../utils/playlist';
 
 function ChannelMonitorCard({
   channel,
@@ -25,7 +17,7 @@ function ChannelMonitorCard({
   onSkip,
 }: {
   channel: Channel;
-  status?: ChannelStatus;
+  status?: ChannelStatus & { up_next?: string };
   onSkip: (channelId: number) => Promise<void>;
 }) {
   const { t } = useTranslation();
@@ -57,7 +49,6 @@ function ChannelMonitorCard({
   }, [isPlaying, item, sampleTime]);
 
   const duration = item?.duration_sec ?? 0;
-  const remainingSec = Math.max(0, duration - currentSeek);
   const progressPct = duration > 0 ? Math.min(100, Math.max(0, (currentSeek / duration) * 100)) : 0;
 
   const handleCopyHls = async () => {
@@ -91,110 +82,101 @@ function ChannelMonitorCard({
   };
 
   const state = status?.state || 'stopped';
+  const hasProgress = isPlaying && duration > 0;
 
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-lg transition-all hover:border-white/20">
-      <div>
-        {/* Header: Number, Name, State Badge */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 font-mono text-xs font-bold text-neutral-300 border border-white/10">
-              #{channel.number}
-            </span>
-            <div className="min-w-0">
-              <h3 className="truncate text-base font-semibold text-[#F5F5F7] tracking-tight">
-                {channel.name}
-              </h3>
-            </div>
-          </div>
+    <Card className="flex flex-col justify-between overflow-hidden p-4 gap-4">
+      <div className="space-y-3">
+        {/* ChannelArt 16:9 header with rounded-tile & overflow hidden */}
+        <ChannelArt
+          channelId={channel.id}
+          className="aspect-video w-full rounded-tile overflow-hidden relative shadow-sm"
+        >
+          {/* Channel bug top-left */}
+          <span className="absolute top-2.5 left-2.5 timecode text-xs font-bold text-white bg-black/55 px-2 py-0.5 rounded-control border border-white/15">
+            #{channel.number}
+          </span>
 
-          <div>
+          {/* StatusPill top-right */}
+          <div className="absolute top-2.5 right-2.5">
             {state === 'playing' ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-live-pulse" />
-                {t('badge_playing')}
-              </span>
+              <StatusPill status="onair">{t('badge_playing')}</StatusPill>
             ) : state === 'idle' ? (
-              <span className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-400">
-                <span className="h-2 w-2 rounded-full bg-amber-400" />
-                {t('badge_idle')}
-              </span>
+              <StatusPill status="idle">{t('badge_idle')}</StatusPill>
             ) : (
-              <span className="flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-800/80 px-2.5 py-1 text-[11px] font-semibold text-neutral-400">
-                <span className="h-2 w-2 rounded-full bg-neutral-500" />
-                {t('badge_stopped')}
-              </span>
+              <StatusPill status="stopped">{t('badge_stopped')}</StatusPill>
             )}
           </div>
-        </div>
+        </ChannelArt>
 
-        {/* Now Playing info & Progress bar */}
-        <div className="mb-4 rounded-xl bg-[#0B0B0E]/60 border border-white/5 p-3.5">
-          <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-neutral-500">
-            {t('now_playing')}
-          </div>
-          <div className="truncate text-sm font-medium text-[#F5F5F7] mb-2.5">
+        {/* Channel name and now-playing body */}
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-fg-subtle truncate" title={channel.name}>
+            {channel.name}
+          </h3>
+          <div
+            className="title truncate text-fg"
+            title={isPlaying ? item?.filename : state === 'idle' ? t('idle_title') : '-'}
+          >
             {isPlaying ? item?.filename : state === 'idle' ? t('idle_title') : '-'}
           </div>
-
-          {/* Progress bar (transform scaleX only) */}
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className={`h-full w-full rounded-full transition-transform duration-300 ease-out ${
-                isPlaying ? 'bg-[#0A84FF]' : 'bg-neutral-600'
-              }`}
-              style={{
-                transform: `scaleX(${isPlaying ? progressPct / 100 : 0})`,
-                transformOrigin: 'left',
-              }}
-            />
-          </div>
-
-          <div className="mt-2 flex items-center justify-between text-[11px] font-mono text-neutral-400">
-            <span>{isPlaying ? formatDuration(currentSeek) : '00:00'}</span>
-            <span>
-              {isPlaying
-                ? `${formatDuration(remainingSec)} ${t('remaining')}`
-                : state === 'idle'
-                  ? t('standby')
-                  : '00:00'}
-            </span>
-          </div>
         </div>
+
+        {/* Timecode progress row (only if progress data exists) */}
+        {hasProgress && (
+          <div className="space-y-1.5 pt-1">
+            <div className="h-[2px] w-full overflow-hidden rounded-full bg-hairline">
+              <div
+                className="h-full w-full bg-accent transition-transform duration-300 ease-out origin-left"
+                style={{
+                  transform: `scaleX(${progressPct / 100})`,
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs timecode text-fg-muted">
+              <span>{formatDuration(currentSeek)}</span>
+              <span>{formatDuration(duration)}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Up next line if data exists */}
+        {status?.up_next && (
+          <div className="text-xs text-fg-subtle truncate">
+            {t('next')}: {status.up_next}
+          </div>
+        )}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-4">
+      {/* Action footer */}
+      <div className="flex items-center justify-between gap-2 border-t border-hairline pt-3">
         <div className="flex items-center gap-2">
           {/* Skip button */}
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="secondary"
             onClick={handleSkip}
             disabled={!isPlaying || isSkipping}
             aria-label={t('skip_button')}
-            className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] disabled:opacity-40 disabled:pointer-events-none"
           >
             {isSkipping ? (
-              <Loader2 className="h-4 w-4 animate-spin text-[#0A84FF]" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
             ) : (
-              <SkipForward className="h-4 w-4 text-[#0A84FF]" />
+              <SkipForward className="h-3.5 w-3.5 mr-1.5" />
             )}
             <span>{t('skip_button')}</span>
-          </button>
+          </Button>
 
           {/* Copy HLS link */}
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="ghost"
             onClick={handleCopyHls}
             aria-label={t('copy_hls_url')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+            className="px-2"
           >
-            {copySuccess ? (
-              <Check className="h-4 w-4 text-emerald-400" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-          </button>
+            {copySuccess ? <Check className="h-4 w-4 text-live" /> : <Copy className="h-4 w-4" />}
+          </Button>
         </div>
 
         {/* Open viewer link */}
@@ -203,13 +185,13 @@ function ChannelMonitorCard({
           target="_blank"
           rel="noreferrer"
           aria-label={t('open_viewer')}
-          className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-control px-3 py-1.5 text-xs font-medium text-fg-muted hover:text-fg hover:bg-surface-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <ExternalLink className="h-4 w-4" />
           <span className="hidden sm:inline">{t('open_viewer')}</span>
         </a>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -217,7 +199,7 @@ export function OverviewPage() {
   const { t } = useTranslation();
   const { statuses, refreshChannel } = useAdminEvents();
 
-  const { data: system, isLoading: isSystemLoading } = useQuery({
+  const { data: system } = useQuery({
     queryKey: ['system-info'],
     queryFn: api.getSystemInfo,
   });
@@ -248,133 +230,96 @@ export function OverviewPage() {
     }
   };
 
-  const uptime = parseUptime(system?.uptime_sec ?? 0);
+  const totalChannels = channels?.length ?? system?.channel_count ?? 0;
+  const playingCount = channels
+    ? channels.filter((c) => statuses[c.id]?.state === 'playing').length
+    : (system?.running_channels ?? 0);
+  const idleCount = channels ? channels.filter((c) => statuses[c.id]?.state === 'idle').length : 0;
+  const stoppedCount = channels
+    ? channels.filter((c) => !statuses[c.id] || statuses[c.id]?.state === 'stopped').length
+    : 0;
 
   return (
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-[#F5F5F7]">{t('overview_title')}</h2>
-        <p className="mt-1 text-xs text-neutral-400">{t('overview_subtitle')}</p>
+        <h2 className="title text-xl font-bold tracking-tight text-fg">{t('overview_title')}</h2>
+        <p className="mt-1 text-xs text-fg-muted">{t('overview_subtitle')}</p>
       </div>
 
-      {/* Top stat tiles (staggered entrance) */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            key: 'media',
-            label: t('stat_media_count'),
-            icon: Film,
-            value: isSystemLoading ? '...' : (system?.media_count ?? 0),
-            iconColor: 'text-[#0A84FF]',
-            valueColor: 'text-[#F5F5F7]',
-          },
-          {
-            key: 'channels',
-            label: t('stat_total_channels'),
-            icon: Tv,
-            value: isSystemLoading ? '...' : (system?.channel_count ?? 0),
-            iconColor: 'text-[#0A84FF]',
-            valueColor: 'text-[#F5F5F7]',
-          },
-          {
-            key: 'running',
-            label: t('stat_running_channels'),
-            icon: Radio,
-            value: isSystemLoading ? '...' : (system?.running_channels ?? 0),
-            iconColor: 'text-emerald-400',
-            valueColor: 'text-emerald-400',
-          },
-          {
-            key: 'uptime',
-            label: t('stat_uptime'),
-            icon: Clock,
-            value: isSystemLoading
-              ? '...'
-              : uptime.days > 0
-                ? `${uptime.days}d ${uptime.hours}h ${uptime.mins}m`
-                : `${uptime.hours}h ${uptime.mins}m ${uptime.secs}s`,
-            iconColor: 'text-purple-400',
-            valueColor: 'text-[#F5F5F7]',
-            isUptime: true,
-          },
-        ].map((tile, idx) => {
-          const Icon = tile.icon;
-          return (
-            <motion.div
-              key={tile.key}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: DURATION.normal,
-                delay: getStaggerDelay(idx, 0.04),
-                ease: EASE.spring,
-              }}
-              className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm"
-            >
-              <div className="flex items-center justify-between text-neutral-400 mb-2">
-                <span className="text-xs font-medium uppercase tracking-wider">{tile.label}</span>
-                <Icon className={`h-4 w-4 ${tile.iconColor}`} />
-              </div>
-              <div
-                className={`font-bold tracking-tight ${tile.valueColor} ${
-                  tile.isUptime ? 'text-lg truncate' : 'text-2xl'
-                }`}
-              >
-                {tile.value}
-              </div>
-            </motion.div>
-          );
-        })}
+      {/* Top stat tiles (Control room bento) */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          label={t('stat_total_channels')}
+          value={isChannelsLoading ? '...' : totalChannels}
+          tone="neutral"
+        />
+        <StatTile
+          label={t('stat_running_channels')}
+          value={isChannelsLoading ? '...' : playingCount}
+          tone="onair"
+        />
+        <StatTile label={t('standby')} value={isChannelsLoading ? '...' : idleCount} tone="idle" />
+        <StatTile
+          label={t('badge_stopped')}
+          value={isChannelsLoading ? '...' : stoppedCount}
+          tone="neutral"
+        />
       </div>
 
       {/* Global Feeds Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-[#16161B]/60 p-4">
-        <span className="text-xs font-medium text-neutral-300">{t('feeds_quick_access')}</span>
+      <Card className="flex flex-wrap items-center justify-between gap-4 p-4">
+        <span className="text-xs font-medium text-fg-muted">{t('feeds_quick_access')}</span>
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="secondary"
             onClick={() => copyUrl('/iptv/channels.m3u')}
             aria-label={t('copy_m3u_url')}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="h-3.5 w-3.5 mr-1.5" />
             <span>M3U Playlist</span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            size="sm"
+            variant="secondary"
             onClick={() => copyUrl('/iptv/epg.xml')}
             aria-label={t('copy_epg_url')}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
           >
-            <Copy className="h-3.5 w-3.5" />
+            <Copy className="h-3.5 w-3.5 mr-1.5" />
             <span>XMLTV EPG</span>
-          </button>
+          </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Live Monitor Channel Cards */}
       {isChannelsLoading ? (
-        <div className="flex min-h-[200px] items-center justify-center text-neutral-400">
-          <Loader2 className="h-6 w-6 animate-spin text-[#0A84FF]" />
+        <div className="flex min-h-[200px] items-center justify-center text-fg-muted">
+          <Loader2 className="h-6 w-6 animate-spin text-accent" />
         </div>
       ) : channelsError ? (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-400">
+        <div className="rounded-tile border border-danger/30 bg-danger/10 p-6 text-center text-danger">
           <p className="text-sm">{channelsError.message}</p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => refetchChannels()}
-            className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/15"
+            className="mt-3"
           >
             {t('retry')}
-          </button>
+          </Button>
         </div>
       ) : (channels?.length ?? 0) === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-10 text-center">
-          <Tv className="mx-auto h-10 w-10 text-neutral-600 mb-3" />
-          <h3 className="text-base font-semibold text-[#F5F5F7]">{t('no_channels')}</h3>
-          <p className="mt-1 text-xs text-neutral-400">{t('no_channels_desc')}</p>
-        </div>
+        <Card className="p-8">
+          <EmptyState
+            art={emptyChannels}
+            title={t('no_channels')}
+            description={t('no_channels_desc')}
+          />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence>

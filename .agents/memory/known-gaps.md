@@ -28,5 +28,11 @@
 - **Stray Digit Overlay Transient Glitch (Not Reproduced / Closed)**: The earlier transient glitch ('# 6 / CHANNEL 6' after ArrowLeft x2 + Enter via browser automation) was investigated and not reproduced during Phase 8 testing.
 - **Mobile Device Behavior & Haptics (Unverified)**: Real physical iOS Safari and Android Chrome touch gesture performance, native haptics (`navigator.vibrate`), and orientation change jitter/aspect ratio resizing during active live HLS playback remain unverified on physical hardware (verified in test suites and responsive viewport emulations down to 320px).
 - **Origin-wide `?ui=` Override Persistence**: The `?ui=` query parameter override is persisted in `localStorage` under key `'ui'` per origin. Consequently, a desktop browser navigated to `?ui=mobile` or `?ui=tv` will stay in mobile/tv mode across page visits until explicitly cleared or overridden via `?ui=desktop`.
+- **AmbientBackground Wallpaper Preload Overhead**: `AmbientBackground` renders four `<img>` tags hidden via CSS, causing all four wallpapers (~82 KB) to download regardless of active theme or screen orientation.
+- **Desktop GPU Blur Performance (Unmeasured)**: Performance overhead of real `backdrop-filter` blur on low-end desktop GPUs has not been measured.
+- **`prefers-reduced-transparency` Browser Support**: CSS media query support for `prefers-reduced-transparency` varies across browsers.
+- **Physical Device Validation (Unverified)**: UI revamp verified via desktop browser and responsive emulation; not tested on physical Smart TVs or mobile phones.
+- **Idle Image Font Licensing**: Server idle frame (`assets/filler/siaran_segera_kembali.jpg`) text was rendered with the Windows Segoe UI font; confirm font licensing if distributed beyond this project.
+- **LLM Quota Fallback During Development**: agy claude-sonnet-4-6 quota was exhausted during the revamp work; workers ran on gemini-3.8-flash-high.
 
 

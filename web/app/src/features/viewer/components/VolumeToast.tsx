@@ -18,26 +18,26 @@ export const VolumeToast: React.FC<VolumeToastProps> = ({ visible, volume, isMut
     <div
       data-testid="volume-toast"
       aria-live="polite"
-      className="pointer-events-none fixed top-12 right-12 z-50 flex items-center gap-4 rounded-2xl border border-white/20 bg-[#16161B]/95 px-6 py-4 shadow-2xl transition-opacity duration-200"
+      className="pointer-events-none fixed top-12 right-12 z-50 flex items-center gap-3.5 rounded-full border border-hairline glass-hud px-5 py-3 shadow-2 transition-opacity duration-200"
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white">
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-2 text-fg">
         {isMuted || percent === 0 ? (
-          <VolumeX className="h-6 w-6 text-red-400" />
+          <VolumeX className="h-4 w-4 text-danger" />
         ) : (
-          <Volume2 className="h-6 w-6 text-[#0A84FF]" />
+          <Volume2 className="h-4 w-4 text-accent" />
         )}
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between gap-4 font-mono text-sm font-semibold text-white">
+        <div className="flex items-center justify-between gap-4 font-mono text-xs font-semibold text-fg timecode">
           <span>{message || (isMuted ? t('muted_chip') : t('volume'))}</span>
           <span>{percent}%</span>
         </div>
 
-        {/* Horizontal volume level indicator (scaleX transform only) */}
-        <div className="h-2 w-36 overflow-hidden rounded-full bg-white/20">
+        {/* Horizontal volume level indicator (scaleX transform only, 4px track) */}
+        <div className="h-1 w-32 overflow-hidden rounded-full bg-white/20">
           <div
-            className="h-full w-full bg-[#0A84FF] transition-transform duration-100 ease-out"
+            className="h-full w-full bg-accent transition-transform duration-100 ease-out"
             style={{
               transform: `scaleX(${isMuted ? 0 : volume})`,
               transformOrigin: 'left',
