@@ -25,6 +25,7 @@ type AccessRule struct {
 // | /api/v1/channels                 | GET, HEAD, OPTIONS  | PUBLIC    | Channel list                      |
 // | /api/v1/channels/{id}            | GET, HEAD, OPTIONS  | PUBLIC    | Single channel detail             |
 // | /api/v1/channels/{id}/status     | GET, HEAD, OPTIONS  | PUBLIC    | Channel playout status (phase 2b) |
+// | /api/v1/channels/{id}/epg        | GET, HEAD, OPTIONS  | PUBLIC    | Channel EPG upcoming items (ph 4) |
 // | /api/v1/auth/logout              | POST                | PROTECTED | Session invalidation              |
 // | /api/v1/channels (mutations)     | POST                | PROTECTED | Create channel                    |
 // | /api/v1/channels/{id} (mutations)| PUT, DELETE         | PROTECTED | Update/delete channel             |
@@ -41,6 +42,7 @@ var AccessMatrix = []AccessRule{
 	{Pattern: "/api/v1/channels", Methods: []string{"GET", "HEAD", "OPTIONS"}, Protected: false, Comment: "Public channel list"},
 	{Pattern: "/api/v1/channels/{id}", Methods: []string{"GET", "HEAD", "OPTIONS"}, Protected: false, Comment: "Public channel detail"},
 	{Pattern: "/api/v1/channels/{id}/status", Methods: []string{"GET", "HEAD", "OPTIONS"}, Protected: false, Comment: "Public channel status"},
+	{Pattern: "/api/v1/channels/{id}/epg", Methods: []string{"GET", "HEAD", "OPTIONS"}, Protected: false, Comment: "Public channel EPG"},
 	{Pattern: "/api/v1/auth/logout", Methods: []string{"POST"}, Protected: true, Comment: "Admin logout"},
 	{Pattern: "/api/v1/channels", Methods: []string{"POST"}, Protected: true, Comment: "Create channel"},
 	{Pattern: "/api/v1/channels/{id}", Methods: []string{"PUT", "DELETE"}, Protected: true, Comment: "Update / delete channel"},
@@ -93,8 +95,8 @@ func isChannelPublicPath(p string) bool {
 	if len(parts) == 1 && parts[0] != "" {
 		return true // /api/v1/channels/{id}
 	}
-	if len(parts) == 2 && parts[0] != "" && parts[1] == "status" {
-		return true // /api/v1/channels/{id}/status
+	if len(parts) == 2 && parts[0] != "" && (parts[1] == "status" || parts[1] == "epg") {
+		return true // /api/v1/channels/{id}/status or /api/v1/channels/{id}/epg
 	}
 	return false
 }

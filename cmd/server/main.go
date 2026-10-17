@@ -88,6 +88,7 @@ func main() {
 	}
 
 	statusH := newStatusHandler(conn, supervisor, hub)
+	epgH := newEPGHandler(conn, supervisor, calc)
 
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
@@ -114,6 +115,7 @@ func main() {
 	feed.NewHandler(conn).Register(mux)
 	authHandler.Register(mux)
 	statusH.register(mux)
+	epgH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
 	// spaFS is rooted at app/dist/app inside the embedded web.Dist FS.
