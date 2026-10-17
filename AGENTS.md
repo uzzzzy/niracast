@@ -17,6 +17,16 @@ go test ./...                  # Run all unit and integration tests
 go vet ./...                   # Run code vetting and static checks
 ```
 
+### Frontend Commands
+```bash
+cd web/app && pnpm install     # Install frontend dependencies
+cd web/app && pnpm dev         # Run Vite dev server
+cd web/app && pnpm check       # Run Biome lint & format check
+cd web/app && pnpm typecheck   # Run TypeScript type check
+cd web/app && pnpm test        # Run Vitest unit tests
+cd web/app && pnpm build       # Build production SPA bundle
+```
+
 ## Environment Variables
 - `ADMIN_PASSWORD`: Admin authentication password (empty = random password logged once on startup).
 - `SESSION_SECRET`: Secret key for HMAC cookie signing (empty = random per process, sessions reset on restart).

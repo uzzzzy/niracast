@@ -6,6 +6,7 @@
   - `main.go`: Application initialization, dependency wiring, and HTTP server startup.
   - `media.go`: `scanLoop` background scanner (every 5 min) and `GET /api/v1/media`.
   - `hls.go`: On-demand FFmpeg session trigger and endpoints `GET /channels/{id}/live.m3u8` and `GET /channels/{id}/{file}.ts`.
+  - `spa.go`: SPA HTTP handler with fallback rules (`/api` returns 404 JSON, `/channels`, `/iptv`, and `/static` never fall back, missing file with extension returns 404, `index.html` served with `no-cache`, `/assets` served immutable, 503 Service Unavailable when frontend is not built).
 - **`internal/db`**: Database initialization (`InitDB`), WAL mode configuration, and migration execution (`schema.sql`: tables `channels`, `media_files`, `playlists`, `schedules`).
 - **`internal/ingest`**: Filesystem `Scanner` for `.mp4`, `.mkv`, and `.mov` (skipping hidden files); `ProbeMedia` utilizing ffprobe with 10s timeout.
 - **`internal/models`**: Domain data models and structs.
@@ -21,10 +22,19 @@
 - **`internal/auth`**: Authentication and session management (HMAC-signed HttpOnly session cookie `tvs_session` 12h, CSRF double-submit header `X-CSRF-Token`, login rate limit 5/min per `RemoteAddr` via `golang.org/x/time/rate`, route access matrix in `internal/auth/matrix.go`).
 - **`internal/events`**: Non-blocking pub/sub hub for real-time broadcast and event dispatch.
 - **`internal/feed`**: IPTV feeds serving `GET /iptv/channels.m3u` and `GET /iptv/epg.xml`.
-- **`web/static`**: Frontend assets (`index.html`, `app.js`, `style.css`, `player.html`, `player.js`).
+- **`web/app`**: Modern Single-Page Application (Vite 8, React 19, TypeScript, Tailwind CSS v4, React Router 8, TanStack Query, Biome, Vitest; routes `/`, `/watch/:id`, `/admin/*`; lazy chunks per route).
+- **`web/embed.go`**: Embedded filesystem (`go:embed all:app/dist`), providing `SPA()` sub-filesystem mapped to `app/dist/app`.
+- **`web/static`**: Legacy dashboard and player assets (`index.html`, `app.js`, `style.css`, `player.html`, `player.js`), still accessible at `/static/`.
 
 ## Key API Routes
 
+- **Channels**:
+  - `GET /api/v1/channels`: List all channels.
+  - `GET /api/v1/channels/{id}`: Channel details with active playlist items (public).
+  - `POST /api/v1/channels`: Create channel (protected).
+  - `PUT /api/v1/channels/{id}`: Update channel (protected).
+  - `DELETE /api/v1/channels/{id}`: Delete channel (protected).
+  - `POST /api/v1/channels/{id}/playlist`: Set channel playlist (protected).
 - **Authentication**:
   - `POST /api/v1/auth/login`: Authenticate and issue session cookie with CSRF token.
   - `POST /api/v1/auth/logout`: Terminate session and clear cookie.
@@ -41,7 +51,8 @@
 
 ## Docker Setup
 
-- **Builder**: `golang:1.27-alpine`
+- **Web Stage**: `node:22-alpine` building `web/app` with BuildKit pnpm cache (`--mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store`).
+- **Builder**: `golang:1.27-alpine` copying compiled frontend from `web` stage into `web/app/dist/app`.
 - **Runtime**: `alpine:3.21` with `ffmpeg`
 - **User**: Non-root user `app` (`uid 100`)
 - **Assets**: `assets/filler` baked directly into the image for idle fallback card.

@@ -16,6 +16,7 @@ import (
 	"tv-stream/internal/feed"
 	"tv-stream/internal/stream"
 	"tv-stream/internal/timeline"
+	"tv-stream/web"
 )
 
 func env(key, def string) string {
@@ -115,10 +116,15 @@ func main() {
 	statusH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
-	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/static/", http.StatusFound)
-	})
+	// spaFS is rooted at app/dist/app inside the embedded web.Dist FS.
+	spaFS, err := web.SPA()
+	if err != nil {
+		log.Fatalf("init spa fs: %v", err)
+	}
+	spaHandler := newSPAHandler(spaFS)
+
+	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("GET /", spaHandler)
 
 	handler := authHandler.Protect(mux, nil)
 	srv := &http.Server{Addr: addr, Handler: handler}

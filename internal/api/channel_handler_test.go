@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -48,6 +49,12 @@ func TestChannelCRUD(t *testing.T) {
 		t.Errorf("list missing channel: %s", rec.Body.String())
 	}
 
+	recSingle := do("GET", "/api/v1/channels/1", "")
+	chExpect(t, recSingle, 200)
+	if !strings.Contains(recSingle.Body.String(), "Classic Movies") {
+		t.Errorf("get missing channel: %s", recSingle.Body.String())
+	}
+
 	chExpect(t, do("PUT", "/api/v1/channels/1", `{"number":1,"name":"Renamed"}`), 200)
 	chExpect(t, do("PUT", "/api/v1/channels/99", `{"number":9,"name":"X"}`), 404)
 	chExpect(t, do("PUT", "/api/v1/channels/abc", `{"number":9,"name":"X"}`), 400)
@@ -85,4 +92,70 @@ func TestChannelPlaylist(t *testing.T) {
 	chExpect(t, do("POST", "/api/v1/channels/1/playlist", `{"media_ids":[42]}`), 400)
 	chExpect(t, do("POST", "/api/v1/channels/77/playlist", `{"media_ids":[1]}`), 404)
 	chExpect(t, do("POST", "/api/v1/channels/1/playlist", `nope`), 400)
+}
+
+func TestGetChannel(t *testing.T) {
+	do := chSetup(t)
+	chExpect(t, do("POST", "/api/v1/channels", `{"number":1,"name":"Classic Movies"}`), 201)
+
+	tests := []struct {
+		name       string
+		path       string
+		wantStatus int
+		wantFields bool
+	}{
+		{
+			name:       "200 success",
+			path:       "/api/v1/channels/1",
+			wantStatus: http.StatusOK,
+			wantFields: true,
+		},
+		{
+			name:       "404 unknown id",
+			path:       "/api/v1/channels/999",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "400 or 404 non-numeric id",
+			path:       "/api/v1/channels/abc",
+			wantStatus: http.StatusNotFound,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := do("GET", tc.path, "")
+			if tc.name == "400 or 404 non-numeric id" {
+				if rec.Code != http.StatusNotFound && rec.Code != http.StatusBadRequest {
+					t.Fatalf("status = %d, want 404 or 400; body=%s", rec.Code, rec.Body.String())
+				}
+			} else if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d; body=%s", rec.Code, tc.wantStatus, rec.Body.String())
+			}
+
+			if rec.Header().Get("Content-Type") != "application/json" {
+				t.Errorf("content-type = %q, want application/json", rec.Header().Get("Content-Type"))
+			}
+
+			var body map[string]any
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatalf("invalid json response: %v", err)
+			}
+
+			if tc.wantFields {
+				for _, key := range []string{"id", "number", "name", "created_at"} {
+					if _, ok := body[key]; !ok {
+						t.Errorf("missing expected key %q in response: %v", key, body)
+					}
+				}
+				if body["name"] != "Classic Movies" {
+					t.Errorf("expected name 'Classic Movies', got %v", body["name"])
+				}
+			} else {
+				if errStr, ok := body["error"].(string); !ok || errStr == "" {
+					t.Errorf("missing or empty error message in response: %v", body)
+				}
+			}
+		})
+	}
 }

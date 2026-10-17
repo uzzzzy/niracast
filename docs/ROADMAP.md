@@ -55,12 +55,43 @@
 |---|---|---|---|
 | 1 | `feature/playout-supervisor-idle` | Playout supervisor auto-advancing playlist items, pre-encoded idle video generator, and copy-loop fallback on empty channels. | **DONE**: Playout rolls seamlessly across items and falls back to low-CPU idle card without 404s (~2% CPU, ~32MiB). |
 | 2 | `feature/admin-auth` | Admin env password verification, HTTP-only cookie sessions, CSRF protection, SSE event stream (`/api/v1/events`), and channel status/skip APIs. | **DONE**: Admin auth, CSRF, and rate limiting protect CMS APIs; status inspection and live SSE events operational. |
-| 3 | `feature/frontend-scaffold` | React 19 + Vite setup in `web/`, Dockerfile Node build stage, binary embedding via `go:embed`, and SPA fallback routing. | Go server serves the compiled React single-page app on root and unknown routes from a single container. |
+| 3 | `feature/frontend-scaffold` | React 19 + Vite setup in `web/`, Dockerfile Node build stage, binary embedding via `go:embed`, and SPA fallback routing. | **DONE**: React 19 SPA embedded via go:embed, SPA fallback routing active, multi-stage Docker build verified (211MB). |
 | 4 | `feature/viewer-page` | Dedicated viewer (`/watch/{id}`) with custom `hls.js` hook (exponential backoff), glass HUD, channel switcher, and Now/Next EPG. | Desktop browser plays channel HLS stream with operational glass HUD overlay and channel selector. |
 | 5 | `feature/cms-studio` | CMS dashboard: media file library viewer, drag-and-drop playlist reordering, visual schedule planner, and live status monitor. | Operator can reorder channel playlist via drag-and-drop and skip currently playing track via UI. |
 | 6 | `feature/motion-system` | Physics spring animation tokens, View Transitions integration, layout morphing, and lite-motion fallback toggle. | UI transitions smoothly with zero layout reflows and honors system reduced-motion preferences. |
 | 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | Viewer page navigable entirely via arrow keys and Enter on TV browser simulation. |
 | 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | Web app functions responsively on standard mobile screen sizes without horizontal clipping. |
+
+## Future Plan (not yet scheduled)
+
+### F1: Scheduled broadcast (TV-style programming)
+- **Goal**: Enable clock-time broadcast programming alongside loop playback. Today a channel is a 24/7 wall-clock loop of its playlist (`now mod total playlist duration`) with no clock times; the `schedules` table already has `start_time`/`duration_sec` columns that are unused by the resolver.
+- **Scope**:
+  - Per-channel mode: `"loop"` (current behaviour) or `"scheduled"`.
+  - Time-slot resolver in `internal/timeline` picking the item by `start_time` window.
+  - Schedule gaps: play the idle slate using the existing supervisor idle fallback.
+  - Recurrence: daily and weekly repeat rules.
+  - Feed generation: XMLTV EPG and M3U generated from the real schedule.
+  - CMS planner: day/week timeline, drag-and-drop slots, overlap/conflict warnings, timezone handling (default `Asia/Jakarta`, configurable).
+- **Dependencies**: Phase 5 (CMS studio) done first so the UI is not built twice; careful interaction with the in-memory skip offset (decide: skip in scheduled mode only advances to next slot item).
+- **Risks / Unverified**: Timezone/DST edge cases; items whose real duration differs from scheduled slot (truncate or fill with idle); schema migration needed (add a migration runner then).
+- **Done criterion**: A channel plays programme A at 19:00 and slate in gaps without manual action, EPG matches.
+
+### F2: Realtime analytics
+- **Goal**: Provide real-time playout and audience metrics for operational monitoring.
+- **Scope**:
+  - Live concurrency: concurrent viewers per channel and total, shown live in the CMS monitor via the existing SSE hub (`internal/events`).
+  - Historical metrics: peak per hour/day, total watch time, most-watched media, estimated outbound bandwidth aggregated per minute into SQLite with retention (raw minutes 30 days, daily rollups 1 year).
+  - Channel health: idle/error state, FFmpeg restart count.
+  - Analytics API: `GET /api/v1/analytics/*` (protected).
+  - Viewer counting model: inferred from HLS request patterns (a client counts as active if it requested a manifest or segment within the last ~10 s; client id = daily-salted hash of IP+User-Agent), so numbers are estimates, not exact; players behind one NAT with the same UA collapse into one.
+  - Privacy: no raw IPs stored, hashes rotate daily, no PII, no GeoIP in the first version.
+- **Dependencies**: Phase 5 for the UI; the existing `SessionManager` activity pings and events hub.
+- **Risks / Unverified**: Viewer counting accuracy under NAT and caching (UNVERIFIED accuracy, must be measured with real clients).
+- **Done criterion**: CMS shows live viewer counts per channel within ~5 s and a 24 h history chart.
+
+### Suggested order
+After Phase 8 or interleaved after Phase 5: F1 then F2 (or F2 first if monitoring matters more). Both are proposals to be confirmed by the user.
 
 ## Open & Unverified Questions
 - **Unverified:** Manifest discontinuity behavior: Verify player stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode-copy switching on Safari and Smart TVs.

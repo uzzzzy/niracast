@@ -21,6 +21,7 @@ func NewChannelHandler(db *sql.DB) *ChannelHandler { return &ChannelHandler{DB: 
 func (h *ChannelHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/channels", h.list)
 	mux.HandleFunc("POST /api/v1/channels", h.create)
+	mux.HandleFunc("GET /api/v1/channels/{id}", h.get)
 	mux.HandleFunc("PUT /api/v1/channels/{id}", h.update)
 	mux.HandleFunc("DELETE /api/v1/channels/{id}", h.delete)
 	mux.HandleFunc("POST /api/v1/channels/{id}/playlist", h.setPlaylist)
@@ -84,6 +85,20 @@ func (h *ChannelHandler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	chWriteJSON(w, http.StatusOK, chs)
+}
+
+func (h *ChannelHandler) get(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil || id <= 0 {
+		chWriteError(w, http.StatusNotFound, "channel not found")
+		return
+	}
+	c, err := models.GetChannel(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
+	chWriteJSON(w, http.StatusOK, c)
 }
 
 func (h *ChannelHandler) create(w http.ResponseWriter, r *http.Request) {

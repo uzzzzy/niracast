@@ -23,5 +23,10 @@
   - Direct RemoteAddr rate limiting: The login rate limiter strictly inspects `r.RemoteAddr` and does not trust `X-Forwarded-For` to prevent unauthenticated header spoofing without explicit proxy configuration.
   - Temporary vanilla dashboard auth: Added a minimal login modal to the legacy vanilla dashboard to support authenticated operations until Phase 5 replaces the UI.
   - Repository-wide LF enforcement: Added `.gitattributes` forcing LF endings repository-wide because `core.autocrlf=true` generated CRLF line breaks that broke `gofmt -l` checks during pre-commit.
+- **Phase 3 Frontend Scaffold Decisions**:
+  - Exact version pins: Configured `.npmrc` with `save-exact=true` and enforced `packageManager` in `package.json` (`pnpm@10.5.2`) for reproducible and deterministic dependency lockfiles.
+  - Vite outDir is dist/app: Vite build output is isolated to `web/app/dist/app` so that the tracked placeholder `web/app/dist/.gitkeep` survives Vite's `emptyOutDir`. A clean git clone can immediately run `go build` out of the box without Node installed (bug found and fixed).
+  - Deferred dependencies: Deferred UI/player dependencies (`motion`, `radix-ui`, `hls.js`, `@dnd-kit`, `sonner`) until their dedicated roadmap phases to maintain a lean scaffold.
+- **2026-10-17**: Future plan recorded: scheduled broadcast (F1) and realtime analytics (F2), not scheduled yet; see docs/ROADMAP.md.
 
 

@@ -29,3 +29,8 @@ ehthumbs.db
 Desktop.ini
 .DS_Store
 ._*
+
+# Frontend build & dependencies
+web/app/node_modules/
+web/app/dist/*
+!web/app/dist/.gitkeep
