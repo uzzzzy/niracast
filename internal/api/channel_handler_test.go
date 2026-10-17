@@ -328,3 +328,57 @@ func TestDeleteChannel_StopsPlayoutAndCleansPlaylist(t *testing.T) {
 	// Non-numeric ID -> 400
 	chExpect(t, do("DELETE", "/api/v1/channels/abc", ""), 400)
 }
+
+type fakeReloader struct {
+	reloaded []int64
+}
+
+func (f *fakeReloader) Reload(id int64) {
+	f.reloaded = append(f.reloaded, id)
+}
+
+func TestChannelMode_CreateAndUpdateAndReload(t *testing.T) {
+	conn, err := db.InitDB(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	reloader := &fakeReloader{}
+	h := NewChannelHandler(conn)
+	h.SetReloader(reloader)
+	mux := http.NewServeMux()
+	h.Register(mux)
+
+	do := func(method, path, body string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+		return rec
+	}
+
+	// 1. Create channel with mode = "scheduled"
+	rec1 := do("POST", "/api/v1/channels", `{"number":1,"name":"Sched Channel","mode":"scheduled"}`)
+	chExpect(t, rec1, 201)
+	if !strings.Contains(rec1.Body.String(), `"mode":"scheduled"`) {
+		t.Errorf("expected mode scheduled, got: %s", rec1.Body.String())
+	}
+
+	// 2. Create with invalid mode -> 400
+	recBad := do("POST", "/api/v1/channels", `{"number":2,"name":"Bad","mode":"invalid_mode"}`)
+	chExpect(t, recBad, 400)
+
+	// 3. Update channel to mode = "loop" -> triggers Reload
+	recUp := do("PUT", "/api/v1/channels/1", `{"number":1,"name":"Sched Channel","mode":"loop"}`)
+	chExpect(t, recUp, 200)
+	if !strings.Contains(recUp.Body.String(), `"mode":"loop"`) {
+		t.Errorf("expected mode loop, got: %s", recUp.Body.String())
+	}
+	if len(reloader.reloaded) != 1 || reloader.reloaded[0] != 1 {
+		t.Errorf("expected reloader.reloaded=[1], got: %v", reloader.reloaded)
+	}
+
+	// 4. Update with invalid mode -> 400
+	recBadUp := do("PUT", "/api/v1/channels/1", `{"number":1,"name":"Sched Channel","mode":"invalid_mode"}`)
+	chExpect(t, recBadUp, 400)
+}

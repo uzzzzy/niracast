@@ -11,7 +11,7 @@ import (
 //go:embed schema.sql
 var schemaSQL string
 
-// InitDB opens the SQLite database at dbPath, enables WAL mode and applies the schema.
+// InitDB opens the SQLite database at dbPath, enables WAL mode and applies schema version 2.
 func InitDB(dbPath string) (*sql.DB, error) {
 	conn, err := sql.Open("sqlite", dbPath)
 	if err != nil {
@@ -24,9 +24,45 @@ func InitDB(dbPath string) (*sql.DB, error) {
 		conn.Close()
 		return nil, fmt.Errorf("enable WAL: %w", err)
 	}
-	if _, err := conn.Exec(schemaSQL); err != nil {
+
+	var userVersion int
+	if err := conn.QueryRow("PRAGMA user_version;").Scan(&userVersion); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("apply schema: %w", err)
+		return nil, fmt.Errorf("read user_version: %w", err)
 	}
+
+	switch userVersion {
+	case 0:
+		var hasChannels int
+		err := conn.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='channels';").Scan(&hasChannels)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("check channels table: %w", err)
+		}
+		if hasChannels > 0 {
+			conn.Close()
+			return nil, fmt.Errorf("database uses an outdated schema and must be deleted (dev reset)")
+		}
+
+		if _, err := conn.Exec(schemaSQL); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("apply schema: %w", err)
+		}
+		if _, err := conn.Exec("PRAGMA user_version = 2;"); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("set user_version: %w", err)
+		}
+
+	case 2:
+		if _, err := conn.Exec(schemaSQL); err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("apply schema: %w", err)
+		}
+
+	default:
+		conn.Close()
+		return nil, fmt.Errorf("unsupported database schema version %d", userVersion)
+	}
+
 	return conn, nil
 }

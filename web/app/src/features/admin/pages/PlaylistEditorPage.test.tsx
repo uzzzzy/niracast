@@ -40,6 +40,7 @@ describe('PlaylistEditorPage', () => {
       id: 1,
       number: 1,
       name: 'Channel One',
+      mode: 'loop',
       created_at: '2026-01-01',
     });
 
@@ -98,6 +99,7 @@ describe('PlaylistEditorPage', () => {
       id: 1,
       number: 1,
       name: 'Loop Channel',
+      mode: 'loop',
       created_at: '2026-01-01',
     });
 
@@ -143,5 +145,28 @@ describe('PlaylistEditorPage', () => {
     await waitFor(() => {
       expect(saveSpy).toHaveBeenCalledWith(1, [50, 50]);
     });
+  });
+
+  it('shows informational banner for scheduled channels', async () => {
+    vi.spyOn(api, 'getChannel').mockResolvedValue({
+      id: 1,
+      number: 1,
+      name: 'Scheduled Channel',
+      mode: 'scheduled',
+      created_at: '2026-01-01',
+    });
+
+    vi.spyOn(api, 'getChannelPlaylist').mockResolvedValue({
+      channel_id: 1,
+      items: [],
+      total_duration_sec: 0,
+    });
+
+    vi.spyOn(api, 'getMedia').mockResolvedValue([]);
+
+    renderComponent();
+
+    expect(await screen.findByText(/This channel is in Scheduled mode/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Open Broadcast Schedule/i })).toBeInTheDocument();
   });
 });

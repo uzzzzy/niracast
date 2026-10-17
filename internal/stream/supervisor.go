@@ -19,8 +19,9 @@ import (
 
 // Playout control errors.
 var (
-	ErrNotPlaying = errors.New("channel is not playing")
-	ErrNotRunning = errors.New("channel playout loop is not running")
+	ErrNotPlaying      = errors.New("channel is not playing")
+	ErrNotRunning      = errors.New("channel playout loop is not running")
+	ErrSkipUnavailable = errors.New("skip unavailable")
 )
 
 // ChannelStatus describes the real-time playout state of a broadcast channel.
@@ -78,6 +79,9 @@ type Supervisor struct {
 	// idlePollInterval controls how often waitIdleOrReal checks for a real item.
 	// Defaults to 5 seconds if <= 0.
 	idlePollInterval time.Duration
+
+	// modeLookup optionally returns the channel mode ("loop" or "scheduled").
+	modeLookup func(channelID int64) (string, error)
 }
 
 // NewSupervisor constructs a Supervisor.
@@ -108,6 +112,13 @@ func NewSupervisor(
 		statuses:    make(map[int64]ChannelStatus),
 		skipped:     make(map[int64]bool),
 	}
+}
+
+// SetModeLookup configures an optional channel mode lookup func.
+func (s *Supervisor) SetModeLookup(fn func(int64) (string, error)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.modeLookup = fn
 }
 
 // SetPublisher configures an optional event publisher (Hub).
@@ -226,7 +237,7 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		case err != nil:
 			log.Printf("supervisor: channel %d playout resolve: %v", channelID, err)
 			useIdle = true
-		case item == nil || item.FilePath == "":
+		case item == nil || item.FilePath == "" || item.Gap:
 			useIdle = true
 		default:
 			// Verify the source file is readable before committing to it.
@@ -239,6 +250,13 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		// Three consecutive exits faster than 2 s → fall back to idle.
 		if consecutiveFails >= 3 {
 			useIdle = true
+		}
+
+		var nextStart time.Time
+		var stopAfterSec float64
+		if item != nil {
+			nextStart = item.NextStart
+			stopAfterSec = item.StopAfterSec
 		}
 
 		var cfg StreamConfig
@@ -320,9 +338,22 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		}
 
 		switchedToReal := false
+		timedOut := false
 		if useIdle {
-			// While idling, poll for a real item to become available.
-			switchedToReal = s.waitIdleOrReal(ctx, channelID, pollInterval)
+			// While idling, poll or wait for nextStart for a real item to become available.
+			switchedToReal = s.waitIdleOrReal(ctx, channelID, pollInterval, nextStart)
+		} else if stopAfterSec > 0 {
+			stopTimer := time.NewTimer(time.Duration(stopAfterSec * float64(time.Second)))
+			select {
+			case <-ctx.Done():
+				stopTimer.Stop()
+				return
+			case <-s.ctrl.Done(channelID):
+				stopTimer.Stop()
+			case <-stopTimer.C:
+				timedOut = true
+				_ = s.ctrl.StopStream(channelID)
+			}
 		} else {
 			// Wait for the FFmpeg process to finish naturally.
 			select {
@@ -343,8 +374,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		s.skipped[channelID] = false
 		s.mu.Unlock()
 
-		if switchedToReal || wasSkipped {
-			// Intentional handoff or manual skip is not a failure.
+		if switchedToReal || wasSkipped || timedOut {
+			// Intentional handoff, manual skip, or stopAfterSec timer is not a failure.
 			consecutiveFails = 0
 		} else if elapsed < 2*time.Second {
 			consecutiveFails++
@@ -365,8 +396,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		}
 
 		// Tiny yield so the goroutine doesn't busy-loop on repeated fast exits.
-		// Real handoffs from idle and skips proceed immediately with zero artificial delay.
-		if !switchedToReal && !wasSkipped && elapsed < 2*time.Second {
+		// Real handoffs from idle, skips, and intentional timeouts proceed immediately with zero artificial delay.
+		if !switchedToReal && !wasSkipped && !timedOut && elapsed < 2*time.Second {
 			select {
 			case <-ctx.Done():
 				return
@@ -382,9 +413,22 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 //   - a real playlist item becomes available.
 //
 // Returns true if a real item became available and idle was stopped intentionally.
-func (s *Supervisor) waitIdleOrReal(ctx context.Context, channelID int64, pollInterval time.Duration) bool {
+func (s *Supervisor) waitIdleOrReal(ctx context.Context, channelID int64, pollInterval time.Duration, nextStart time.Time) bool {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
+
+	var timer *time.Timer
+	var timerC <-chan time.Time
+	if !nextStart.IsZero() {
+		d := time.Until(nextStart)
+		if d < 0 {
+			d = 0
+		}
+		timer = time.NewTimer(d)
+		defer timer.Stop()
+		timerC = timer.C
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -392,9 +436,19 @@ func (s *Supervisor) waitIdleOrReal(ctx context.Context, channelID int64, pollIn
 		case <-s.ctrl.Done(channelID):
 			// Idle process exited unexpectedly — let the outer loop restart it.
 			return false
+		case <-timerC:
+			// Timer at NextStart fired: verify playout resolves to a real readable item.
+			if item, err := s.calc.GetCurrentPlayout(channelID, s.nowWithOffset(channelID)); err == nil &&
+				item != nil && !item.Gap && item.FilePath != "" {
+				if _, statErr := os.Stat(item.FilePath); statErr == nil {
+					_ = s.ctrl.StopStream(channelID)
+					return true
+				}
+			}
+			timerC = nil
 		case <-ticker.C:
 			if item, err := s.calc.GetCurrentPlayout(channelID, s.nowWithOffset(channelID)); err == nil &&
-				item != nil && item.FilePath != "" {
+				item != nil && !item.Gap && item.FilePath != "" {
 				// Verify the real file is actually readable on disk before committing.
 				if _, statErr := os.Stat(item.FilePath); statErr == nil {
 					_ = s.ctrl.StopStream(channelID)
@@ -451,7 +505,7 @@ func (s *Supervisor) statusLocked(channelID int64) ChannelStatus {
 	// Resolve current item and remaining seconds at now+skipOffset.
 	now := s.nowWithOffsetLocked(channelID)
 	item, err := s.calc.GetCurrentPlayout(channelID, now)
-	if errors.Is(err, timeline.ErrEmptyPlaylist) || (err == nil && (item == nil || item.FilePath == "")) {
+	if errors.Is(err, timeline.ErrEmptyPlaylist) || (err == nil && (item == nil || item.FilePath == "" || item.Gap)) {
 		if s.skipped[channelID] {
 			st.State = "idle"
 			st.MediaID = 0
@@ -517,6 +571,22 @@ func (s *Supervisor) StopStream(channelID int64) error {
 	return s.ctrl.StopStream(channelID)
 }
 
+// Reload re-resolves playout immediately for channelID if its loop is running.
+// It clears any skip offset, marks skipped=true for an intentional handoff, and
+// stops the current stream so the playout loop immediately evaluates the latest playlist/schedule.
+func (s *Supervisor) Reload(channelID int64) {
+	s.mu.Lock()
+	if _, running := s.active[channelID]; !running {
+		s.mu.Unlock()
+		return
+	}
+	delete(s.skipOffsets, channelID)
+	s.skipped[channelID] = true
+	s.mu.Unlock()
+
+	_ = s.ctrl.StopStream(channelID)
+}
+
 // Skip advances the playout timeline to the next item by adding the current item's
 // RemainingSec (computed from calc.GetCurrentPlayout) to the per-channel in-memory skipOffset,
 // and terminates the active FFmpeg process so the loop immediately resolves the next item.
@@ -524,6 +594,17 @@ func (s *Supervisor) StopStream(channelID int64) error {
 // The skip offset is strictly in-memory and resets on server restart.
 // Only valid while a real item is playing (returns ErrNotPlaying otherwise, ErrNotRunning if no loop).
 func (s *Supervisor) Skip(channelID int64) (ChannelStatus, error) {
+	s.mu.Lock()
+	lookup := s.modeLookup
+	s.mu.Unlock()
+
+	if lookup != nil {
+		mode, err := lookup(channelID)
+		if err == nil && mode == "scheduled" {
+			return ChannelStatus{ChannelID: channelID}, ErrSkipUnavailable
+		}
+	}
+
 	s.mu.Lock()
 
 	// 1. Check if loop is running.

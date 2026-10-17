@@ -15,10 +15,16 @@ type PlayoutStopper interface {
 	StopStream(channelID int64) error
 }
 
+// Reloader re-evaluates channel playout.
+type Reloader interface {
+	Reload(channelID int64)
+}
+
 // ChannelHandler serves channel & playlist CRUD endpoints.
 type ChannelHandler struct {
-	DB      *sql.DB
-	Stopper PlayoutStopper
+	DB       *sql.DB
+	Stopper  PlayoutStopper
+	Reloader Reloader
 }
 
 func NewChannelHandler(db *sql.DB, stopper ...PlayoutStopper) *ChannelHandler {
@@ -26,7 +32,16 @@ func NewChannelHandler(db *sql.DB, stopper ...PlayoutStopper) *ChannelHandler {
 	if len(stopper) > 0 {
 		s = stopper[0]
 	}
-	return &ChannelHandler{DB: db, Stopper: s}
+	var r Reloader
+	if rel, ok := s.(Reloader); ok {
+		r = rel
+	}
+	return &ChannelHandler{DB: db, Stopper: s, Reloader: r}
+}
+
+// SetReloader configures an optional Reloader.
+func (h *ChannelHandler) SetReloader(r Reloader) {
+	h.Reloader = r
 }
 
 // Register mounts routes on mux (Go 1.22+ pattern routing).
@@ -58,6 +73,8 @@ func chHandleModelErr(w http.ResponseWriter, err error) {
 		chWriteError(w, http.StatusNotFound, "channel not found")
 	case errors.Is(err, models.ErrDuplicateNumber):
 		chWriteError(w, http.StatusConflict, err.Error())
+	case errors.Is(err, models.ErrInvalidMode):
+		chWriteError(w, http.StatusBadRequest, err.Error())
 	case errors.As(err, &mm):
 		chWriteError(w, http.StatusBadRequest, mm.Error())
 	default:
@@ -136,10 +153,18 @@ func (h *ChannelHandler) update(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	cur, err := models.GetChannel(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
 	c, err := models.UpdateChannel(h.DB, id, in)
 	if err != nil {
 		chHandleModelErr(w, err)
 		return
+	}
+	if h.Reloader != nil && cur.Mode != c.Mode {
+		h.Reloader.Reload(id)
 	}
 	chWriteJSON(w, http.StatusOK, c)
 }

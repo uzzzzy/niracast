@@ -9,11 +9,11 @@
   - `hls.go`: On-demand FFmpeg session trigger and endpoints `GET /channels/{id}/live.m3u8` and `GET /channels/{id}/{file}.ts`.
   - `epg.go`: EPG endpoint `GET /api/v1/channels/{id}/epg` (public; count 1..20 default 5; items `start_at`/`end_at` in real wall-clock time, skip offset aware; `idle: true` for empty playlist).
   - `spa.go`: SPA HTTP handler with fallback rules (`/api` returns 404 JSON, `/channels`, `/iptv`, and `/static` never fall back, missing file with extension returns 404, `index.html` served with `no-cache`, `/assets` served immutable, 503 Service Unavailable when frontend is not built).
-- **`internal/db`**: Database initialization (`InitDB`), WAL mode configuration, and migration execution (`schema.sql`: tables `channels`, `media_files`, `playlists`, `schedules`).
+- **`internal/db`**: Database initialization (`InitDB`), WAL mode configuration, and schema version 2 management (`schema.sql`: tables `channels` with `mode` loop|scheduled, `media_files`, `playlist_items`, and `schedule_slots` with `idx_slots_channel(channel_id, start_at)`; compatibility view `schedules` with INSTEAD OF triggers; `playlists` table dropped; `PRAGMA user_version = 2` enforced, rejecting legacy v0 databases).
 - **`internal/ingest`**: Filesystem `Scanner` for `.mp4`, `.mkv`, and `.mov` (skipping hidden files); `ProbeMedia` utilizing ffprobe with 10s timeout.
-- **`internal/models`**: Domain data models and structs (`GetPlaylist` returning ordered items and total duration).
-- **`internal/api`**: Channel CRUD routes (`/api/v1/channels`), channel deletion stopping active playout via `PlayoutStopper`, playlist queries (`GET /api/v1/channels/{id}/playlist`), and playlist updates (`POST /api/v1/channels/{id}/playlist` with JSON body `{"media_ids":[...]}`).
-- **`internal/timeline`**: Wall-clock calculation (`now mod total playlist duration` yields current item + seek offset), `Upcoming(channelID, logicalNow, count)` calculating contiguous wall-clock schedule items for looping playlists, `ErrEmptyPlaylist`, and `FillerPolicy`.
+- **`internal/models`**: Domain data models and CRUD operations (`channels` with `mode`, `media_files`, `playlist_items`, and `schedule_slots` with 60-day overlap validation and `ConflictError`).
+- **`internal/api`**: Channel CRUD routes (`/api/v1/channels` with `mode`), channel deletion stopping active playout via `PlayoutStopper`, playlist queries (`GET /api/v1/channels/{id}/playlist`), playlist updates (`POST /api/v1/channels/{id}/playlist`), and schedule slot management (`GET/POST /api/v1/channels/{id}/schedule`, `/api/v1/channels/{id}/schedule/slots`, and `PUT/DELETE .../slots/{slotId}`).
+- **`internal/timeline`**: Playout timeline calculation: loop calculation (`now mod total playlist duration` yields current item + seek offset), slot recurrence expansion (`Expand`) across daily/weekly rules in server timezone, gap filling with idle slate and overrun clipping (`ProgrammesBetween`), scheduled playout resolution (`GetCurrentPlayout`), `Upcoming` projections, `ErrEmptyPlaylist`, and `FillerPolicy`.
 - **`internal/stream`**:
   - `supervisor.go`: Playout supervisor managing continuous stream roll across playlist items, handling idle-to-media transitions, maintaining HLS manifest continuity, exposing `RunningCount()`, and stopping streams on channel removal (`StopStream`).
   - `idle.go`: One-time idle clip generation from static image (`IDLE_IMAGE` env, default `assets/filler/siaran_segera_kembali.jpg`) to 720p H.264 + silent AAC (`IDLE_CLIP` env, default `data/idle_card.mp4`), cached with `.meta` sidecar, looped via copy mode at near-zero CPU.
@@ -44,19 +44,24 @@
 ## Key API Routes
 
 - **Channels**:
-  - `GET /api/v1/channels`: List all channels.
-  - `GET /api/v1/channels/{id}`: Channel details with active playlist items (public).
+  - `GET /api/v1/channels`: List all channels (includes `mode: 'loop' | 'scheduled'`).
+  - `GET /api/v1/channels/{id}`: Channel details with active playlist items and mode (public).
   - `POST /api/v1/channels`: Create channel (protected).
   - `PUT /api/v1/channels/{id}`: Update channel (protected).
   - `DELETE /api/v1/channels/{id}`: Delete channel and stop its playout (protected).
   - `GET /api/v1/channels/{id}/playlist`: Get channel playlist items and duration (protected).
   - `POST /api/v1/channels/{id}/playlist`: Set channel playlist (protected).
+- **Schedule**:
+  - `GET /api/v1/channels/{id}/schedule`: List slots and expanded occurrences for a window (`from`, `to`, default 7 days, max 31 days).
+  - `POST /api/v1/channels/{id}/schedule/slots`: Add schedule slot with 60-day overlap validation (protected, returns 409 Conflict on collision, triggers supervisor reload).
+  - `PUT /api/v1/channels/{id}/schedule/slots/{slotId}`: Update schedule slot (protected, returns 409 Conflict on collision, triggers supervisor reload).
+  - `DELETE /api/v1/channels/{id}/schedule/slots/{slotId}`: Delete schedule slot (protected, triggers supervisor reload).
 - **Media**:
   - `GET /api/v1/media`: Media library listing with codec_video, codec_audio, width, height (protected).
   - `POST /api/v1/media/rescan`: Trigger media rescan (single-flight, shared guard with 5-minute scanLoop, protected).
   - `GET /api/v1/media/scan-status`: Media scan status (protected).
 - **System**:
-  - `GET /api/v1/system`: System runtime info: uptime, counts, running_channels, ffmpeg version, idle clip state (protected).
+  - `GET /api/v1/system`: System runtime info: uptime, counts, running_channels, ffmpeg version, idle clip state, server timezone (protected).
 - **Authentication**:
   - `POST /api/v1/auth/login`: Authenticate and issue session cookie with CSRF token.
   - `POST /api/v1/auth/logout`: Terminate session and clear cookie.
@@ -64,13 +69,14 @@
 - **Playout & Events**:
   - `GET /api/v1/events`: Real-time Server-Sent Events (SSE, protected).
   - `GET /api/v1/channels/{id}/status`: Channel playout status (public).
-  - `GET /api/v1/channels/{id}/epg`: Channel EPG upcoming playlist items (public; count 1..20, default 5; items start_at/end_at in real wall-clock time, skip offset aware; idle: true for empty playlist).
-  - `POST /api/v1/channels/{id}/skip`: Skip current item and advance playout (protected).
+  - `GET /api/v1/channels/{id}/epg`: Channel EPG upcoming playlist items (public; count 1..20, default 5; includes `kind: "programme" | "slate"`, items start_at/end_at in real wall-clock time, skip offset aware in loop mode; idle: true for empty playlist).
+  - `POST /api/v1/channels/{id}/skip`: Skip current item and advance playout (protected; returns 409 Conflict `{"error":"skip_unavailable"}` in scheduled mode).
 
 ## Environment Variables
 
 - `ADMIN_PASSWORD`: Admin password for authentication (empty = random password generated and logged once on startup).
 - `SESSION_SECRET`: HMAC key for signing session cookies (empty = random per process, sessions reset on restart).
+- `TIMEZONE`: Server timezone for schedule slot recurrence expansion, EPG generation, and timeline calculations (default `Asia/Jakarta`).
 
 ## Docker Setup
 

@@ -319,6 +319,27 @@ func TestSkip_AuthAndResponses(t *testing.T) {
 	if resPlay.ChannelID != 2 || resPlay.SkipOffsetSec <= 0 {
 		t.Errorf("skip 200 unexpected shape: %+v", resPlay)
 	}
+
+	// 5. Skip 409 skip_unavailable when channel is in scheduled mode
+	sv.SetModeLookup(func(chID int64) (string, error) {
+		if chID == 2 {
+			return "scheduled", nil
+		}
+		return "loop", nil
+	})
+	reqSched := httptest.NewRequest(http.MethodPost, "/api/v1/channels/2/skip", nil)
+	reqSched.Header.Set("X-CSRF-Token", csrf)
+	reqSched.AddCookie(sessionCookie)
+	recSched := httptest.NewRecorder()
+	handler.ServeHTTP(recSched, reqSched)
+	if recSched.Code != http.StatusConflict {
+		t.Errorf("skip scheduled channel: got %d, want 409", recSched.Code)
+	}
+	var schedErrRes map[string]string
+	_ = json.Unmarshal(recSched.Body.Bytes(), &schedErrRes)
+	if schedErrRes["error"] != "skip_unavailable" {
+		t.Errorf("expected error 'skip_unavailable', got %v", schedErrRes)
+	}
 }
 
 func TestEvents_SSE_SnapshotAndStream(t *testing.T) {

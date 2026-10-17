@@ -2,7 +2,64 @@ export interface Channel {
   id: number;
   number: number;
   name: string;
+  mode: 'loop' | 'scheduled';
   created_at: string;
+}
+
+export interface ScheduleSlot {
+  id: number;
+  channel_id: number;
+  media_id: number;
+  filename: string;
+  title: string;
+  start_at: string;
+  duration_sec: number;
+  media_duration_sec: number;
+  recurrence: 'none' | 'daily' | 'weekly';
+  until: string | null;
+}
+
+export interface ScheduleOccurrence {
+  slot_id: number;
+  media_id: number;
+  filename: string;
+  title: string;
+  start_at: string;
+  end_at: string;
+  media_duration_sec: number;
+  truncated: boolean;
+  short: boolean;
+  recurring: boolean;
+}
+
+export type Occurrence = ScheduleOccurrence;
+
+export interface ScheduleResponse {
+  channel_id: number;
+  timezone: string;
+  slots: ScheduleSlot[];
+  occurrences: ScheduleOccurrence[];
+}
+
+export interface SlotInput {
+  media_id: number;
+  start_at: string;
+  duration_sec?: number;
+  recurrence?: 'none' | 'daily' | 'weekly';
+  until?: string | null;
+}
+
+export interface ScheduleConflict {
+  slot_id: number;
+  title: string;
+  start_at: string;
+  end_at: string;
+}
+
+export interface ScheduleConflictErrorBody {
+  error: 'schedule_conflict' | string;
+  message: string;
+  conflict?: ScheduleConflict;
 }
 
 export interface MediaItem {
@@ -54,6 +111,7 @@ export interface SystemInfo {
   media_count: number;
   channel_count: number;
   running_channels: number;
+  timezone?: string;
   ffmpeg: {
     path: string;
     version: string;
@@ -72,6 +130,7 @@ export interface EpgItem {
   end_at: string;
   duration_sec: number;
   is_current: boolean;
+  kind?: 'programme' | 'slate';
 }
 
 export interface EpgResponse {
@@ -96,12 +155,14 @@ export interface AuthMe {
 export class ApiError extends Error {
   status: number;
   retryAfter?: number;
+  body?: unknown;
 
-  constructor(message: string, status: number, retryAfter?: number) {
+  constructor(message: string, status: number, retryAfter?: number, body?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.retryAfter = retryAfter;
+    this.body = body;
   }
 }
 
@@ -156,9 +217,13 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
 
   if (!response.ok) {
     let message = `Request failed: ${response.status}`;
+    let body: unknown;
     try {
       const err = await response.json();
-      if (err?.error) {
+      body = err;
+      if (err?.message) {
+        message = err.message;
+      } else if (err?.error) {
         message = err.error;
       }
     } catch {
@@ -172,7 +237,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
       notifyUnauthorized();
     }
 
-    throw new ApiError(message, response.status, retryAfter);
+    throw new ApiError(message, response.status, retryAfter, body);
   }
 
   if (response.status === 204) {
@@ -216,18 +281,42 @@ export const api = {
   },
   getChannels: () => apiFetch<Channel[]>('/api/v1/channels'),
   getChannel: (id: number | string) => apiFetch<Channel>(`/api/v1/channels/${id}`),
-  createChannel: (data: { number: number; name: string }) =>
+  createChannel: (data: { number: number; name: string; mode?: 'loop' | 'scheduled' }) =>
     apiFetch<Channel>('/api/v1/channels', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  updateChannel: (id: number | string, data: { number: number; name: string }) =>
+  updateChannel: (
+    id: number | string,
+    data: { number?: number; name?: string; mode?: 'loop' | 'scheduled' },
+  ) =>
     apiFetch<Channel>(`/api/v1/channels/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     }),
   deleteChannel: (id: number | string) =>
     apiFetch<void>(`/api/v1/channels/${id}`, {
+      method: 'DELETE',
+    }),
+  getSchedule: (id: number | string, from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString();
+    return apiFetch<ScheduleResponse>(`/api/v1/channels/${id}/schedule${qs ? `?${qs}` : ''}`);
+  },
+  createSlot: (channelId: number | string, data: SlotInput) =>
+    apiFetch<ScheduleSlot>(`/api/v1/channels/${channelId}/schedule/slots`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSlot: (channelId: number | string, slotId: number | string, data: SlotInput) =>
+    apiFetch<ScheduleSlot>(`/api/v1/channels/${channelId}/schedule/slots/${slotId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteSlot: (channelId: number | string, slotId: number | string) =>
+    apiFetch<void>(`/api/v1/channels/${channelId}/schedule/slots/${slotId}`, {
       method: 'DELETE',
     }),
   getChannelPlaylist: (id: number | string) =>

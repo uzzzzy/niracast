@@ -60,9 +60,9 @@ vi.mock('hls.js', () => {
 });
 
 const mockChannels: apiModule.Channel[] = [
-  { id: 1, number: 101, name: 'Retro Cinema', created_at: '2026-01-01T00:00:00Z' },
-  { id: 2, number: 102, name: 'Anime 24/7', created_at: '2026-01-01T00:00:00Z' },
-  { id: 3, number: 103, name: 'News Live', created_at: '2026-01-01T00:00:00Z' },
+  { id: 1, number: 101, name: 'Retro Cinema', mode: 'loop', created_at: '2026-01-01T00:00:00Z' },
+  { id: 2, number: 102, name: 'Anime 24/7', mode: 'loop', created_at: '2026-01-01T00:00:00Z' },
+  { id: 3, number: 103, name: 'News Live', mode: 'loop', created_at: '2026-01-01T00:00:00Z' },
 ];
 
 const mockStatusPlaying: apiModule.ChannelStatus = {

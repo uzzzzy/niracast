@@ -5,9 +5,9 @@
 - **Docker Image Size**: The current Docker production image is 211MB with multi-stage Node build and embedded SPA assets.
 - **Discontinuity Across Clients (Unverified)**: Safari and Smart TV client stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode/copy switches.
 - **Playout Boundary Edge Case (Unverified)**: When a playlist item resolves with <1s remaining time, supervisor may restart the same file instead of cleanly rolling to the next item.
-- **Skip Offset Volatility**: Playout skip offset is stored in-memory only and is lost on restart.
+- **Skip Offset Volatility & Mismatch (Loop Mode Only)**: Playout skip offset is stored in-memory only and lost on restart. Metadata offset mismatch now only applies to `loop` mode; `scheduled` mode channels disallow skip (returning HTTP 409 Conflict `skip_unavailable`).
 - **SSE Reconnect Under Long Downtime (Unverified)**: Real browser SSE connection verified for Overview live monitor, but reconnection behavior under extended server downtime remains unverified.
-- **Database Migrations**: No migration runner needed yet as Phase 2 introduced no database schema changes.
+- **Database Migration Runner Still Absent**: Schema version 2 is tracked via `PRAGMA user_version = 2` and outdated v0 databases with existing channels are rejected on startup (dev DB was reset). An automated schema migration runner is still absent.
 - **First Manifest Wait in Copy Mode**: First manifest generation wait equals the source GOP length for copy mode (`sample.mp4` with 10s keyframes took ~9s, while real movies take 2.5–5s).
 - **Frontend Bundle Size**: Admin chunk is 274kB raw / 79kB gzip (includes `@dnd-kit` and `sonner` in the lazy admin chunk); `hls` chunk remains 574kB raw / 179kB gzip in full build.
 - **Admin Dialogs & Subpages Manual Testing**: Channels create/edit/delete dialogs and media/system pages verified only by unit tests (not clicked manually in browser run; Overview, login, skip button, and playlist drag-and-drop were verified in real browser).
@@ -15,7 +15,12 @@
 - **Keyboard Shortcut Emulation (Unverified)**: Browser-pane key emulation made keyboard shortcuts unverifiable manually.
 - **Viewer Playout Polling**: The viewer page does not consume Server-Sent Events (`GET /api/v1/events`); instead, it polls `/api/v1/channels/{id}/status` every 5s and `/api/v1/channels/{id}/epg` every 15s.
 - **Conditional Frontend Pre-commit**: Pre-commit hook runs `pnpm check` and `pnpm typecheck` only when `web/app/node_modules` exists.
-- **No Clock-Time Scheduling**: Channels currently loop playlists via wall-clock modulo without fixed-time calendar slot resolution or idle-slate gap filling. Target: Future Plan F1 (`docs/ROADMAP.md`).
+- **Clock-Time Scheduling (Delivered F1)**: Delivered in `feature/scheduled-broadcast` with dual modes (`loop` | `scheduled`), recurrence expansion, idle gap filling, and CMS visual planner.
+- **Planner Timeline Now-Line Static Between Renders**: The current-time indicator line on the CMS schedule timeline is computed per component render and does not tick live in real time.
+- **Schedule Overlap Check Bounded to ~60 Days**: Conflict validation between candidate slots and existing slots expands recurring occurrences within a ~60-day window from slot start; collisions beyond 60 days are not caught at insertion.
+- **XMLTV Slate Programmes in IPTV Apps (Unverified)**: XMLTV `<programme>` elements emitted for scheduled channel idle gaps ("Siaran Segera Kembali") may render oddly or appear as regular programmes in some third-party IPTV client apps.
+- **Scheduled Discontinuity Playback on Real Devices (Unverified)**: Scheduled playback transitions across idle<->programme HLS `#EXT-X-DISCONTINUITY` boundaries remain unverified on physical hardware / Smart TVs.
+- **Lazy Playout Lifecycle (Nothing Airs Without Viewers)**: Playout supervisor loops operate lazily on demand; without active viewer HLS manifest requests, channels remain idle and no stream is continuously broadcast.
 - **No Playout Analytics**: No concurrent viewer estimation, outbound bandwidth tracking, or historical audience metrics. Target: Future Plan F2 (`docs/ROADMAP.md`).
 - **Public HLS Links Unauthenticated & No Rate Limiting**: HLS manifest (`live.m3u8`) and segment (`.ts`) URLs are public with no access tokens, and routes lack rate limiting, allowing rapid manifest requests to keep or restart FFmpeg per channel. Media files and DB remain secure. Target: Future Plan F3 (`docs/ROADMAP.md`).
 - **Live Stream Recording Not Prevented**: Live stream can be recorded or captured by viewers; casual deterrence only (AES-128, watermarking), and watermarking sacrifices zero-CPU copy mode. Priority: LOW (user decision). Target: Future Plan F4 (`docs/ROADMAP.md`).

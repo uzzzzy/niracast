@@ -90,21 +90,48 @@ func upcoming(items []timeline.Item, now time.Time, window time.Duration) []sche
 	return out
 }
 
+// EPGCalculator calculates upcoming programmes for XMLTV EPG generation.
+type EPGCalculator interface {
+	Programmes(channelID int64, from, to time.Time) ([]timeline.UpcomingItem, error)
+}
+
 // GenerateEPG builds the XMLTV document for the next 24h.
-func GenerateEPG(channels []models.Channel, load timeline.Loader, now time.Time) ([]byte, error) {
+func GenerateEPG(channels []models.Channel, calc EPGCalculator, load timeline.Loader, now time.Time) ([]byte, error) {
 	doc := xmltvDoc{Generator: "tv-stream"}
 	for _, c := range channels {
 		doc.Channels = append(doc.Channels, xmltvChannel{ID: channelXMLID(c.ID), DisplayName: c.Name})
 	}
 	for _, c := range channels {
-		items, err := load(c.ID)
-		if err != nil {
-			return nil, fmt.Errorf("load playlist for channel %d: %w", c.ID, err)
-		}
-		for _, s := range upcoming(items, now, epgWindow) {
-			doc.Programme = append(doc.Programme, xmltvProgramme{
-				Start: xmltvTime(s.start), Stop: xmltvTime(s.end), Channel: channelXMLID(c.ID), Title: s.title,
-			})
+		if c.Mode == "scheduled" && calc != nil {
+			progs, err := calc.Programmes(c.ID, now, now.Add(epgWindow))
+			if err != nil {
+				return nil, fmt.Errorf("load programmes for channel %d: %w", c.ID, err)
+			}
+			for _, p := range progs {
+				title := p.Title
+				if p.Kind == "slate" {
+					title = "Siaran Segera Kembali"
+				}
+				doc.Programme = append(doc.Programme, xmltvProgramme{
+					Start:   xmltvTime(p.StartAt.Truncate(time.Second)),
+					Stop:    xmltvTime(p.EndAt.Truncate(time.Second)),
+					Channel: channelXMLID(c.ID),
+					Title:   title,
+				})
+			}
+		} else if load != nil {
+			items, err := load(c.ID)
+			if err != nil {
+				return nil, fmt.Errorf("load playlist for channel %d: %w", c.ID, err)
+			}
+			for _, s := range upcoming(items, now, epgWindow) {
+				doc.Programme = append(doc.Programme, xmltvProgramme{
+					Start:   xmltvTime(s.start),
+					Stop:    xmltvTime(s.end),
+					Channel: channelXMLID(c.ID),
+					Title:   s.title,
+				})
+			}
 		}
 	}
 	body, err := xml.MarshalIndent(doc, "", "  ")
@@ -132,7 +159,11 @@ func (h *Handler) ServeEPG(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	data, err := GenerateEPG(chans, dbLoader(h.DB), now)
+	calc := h.Calc
+	if calc == nil {
+		calc = timeline.NewDBCalculator(h.DB)
+	}
+	data, err := GenerateEPG(chans, calc, dbLoader(h.DB), now)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -152,7 +183,7 @@ func writeXML(w http.ResponseWriter, data []byte) {
 func dbLoader(db *sql.DB) timeline.Loader {
 	return func(channelID int64) ([]timeline.Item, error) {
 		rows, err := db.Query(`SELECT m.id, m.path, COALESCE(m.duration_sec, 0)
-			FROM schedules s JOIN media_files m ON m.id = s.media_id
+			FROM playlist_items s JOIN media_files m ON m.id = s.media_id
 			WHERE s.channel_id = ? ORDER BY s.position_order, s.id`, channelID)
 		if err != nil {
 			return nil, fmt.Errorf("query playlist: %w", err)

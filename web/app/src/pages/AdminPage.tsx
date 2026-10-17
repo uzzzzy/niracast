@@ -10,6 +10,7 @@ import { ChannelsPage } from '../features/admin/pages/ChannelsPage';
 import { MediaPage } from '../features/admin/pages/MediaPage';
 import { OverviewPage } from '../features/admin/pages/OverviewPage';
 import { PlaylistEditorPage } from '../features/admin/pages/PlaylistEditorPage';
+import { SchedulePage } from '../features/admin/pages/SchedulePage';
 import { SystemPage } from '../features/admin/pages/SystemPage';
 import { api, onUnauthorized } from '../lib/api';
 import { DURATION, EASE } from '../lib/motion/tokens';
@@ -112,6 +113,7 @@ export default function AdminPage() {
             <Route index element={<Navigate to="/admin/overview" replace />} />
             <Route path="overview" element={<OverviewPage />} />
             <Route path="channels" element={<ChannelsPage />} />
+            <Route path="channels/:id/schedule" element={<SchedulePage />} />
             <Route path="channels/:id" element={<PlaylistEditorPage />} />
             <Route path="media" element={<MediaPage />} />
             <Route path="system" element={<SystemPage />} />

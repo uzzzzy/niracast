@@ -41,8 +41,8 @@ describe('OverviewPage', () => {
 
   it('merges channels list with SSE snapshot and dynamic playout events', async () => {
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Main Channel', created_at: '2026-01-01' },
-      { id: 2, number: 2, name: 'Backup Channel', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Main Channel', mode: 'loop', created_at: '2026-01-01' },
+      { id: 2, number: 2, name: 'Backup Channel', mode: 'loop', created_at: '2026-01-01' },
     ]);
 
     vi.spyOn(api, 'getSystemInfo').mockResolvedValue({
@@ -105,7 +105,7 @@ describe('OverviewPage', () => {
 
   it('handles skip button click and handles 409 error gracefully', async () => {
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Live 1', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Live 1', mode: 'loop', created_at: '2026-01-01' },
     ]);
 
     vi.spyOn(api, 'getSystemInfo').mockResolvedValue({
@@ -153,5 +153,48 @@ describe('OverviewPage', () => {
     await waitFor(() => {
       expect(skipSpy).toHaveBeenCalledWith(1);
     });
+  });
+
+  it('disables skip button for scheduled channels', async () => {
+    vi.spyOn(api, 'getChannels').mockResolvedValue([
+      { id: 1, number: 1, name: 'Scheduled Channel', mode: 'scheduled', created_at: '2026-01-01' },
+    ]);
+
+    vi.spyOn(api, 'getSystemInfo').mockResolvedValue({
+      uptime_sec: 3600,
+      media_count: 5,
+      channel_count: 1,
+      running_channels: 1,
+      ffmpeg: { path: '/bin/ffmpeg', version: '6.1' },
+      idle_clip: { ready: true, size_bytes: 5000, modified_at: '2026-01-01' },
+    });
+
+    renderComponent();
+
+    expect(await screen.findByText('Scheduled Channel')).toBeInTheDocument();
+
+    const es = MockEventSource.instances[0];
+    act(() => {
+      es.emit('snapshot', [
+        {
+          channel_id: 1,
+          state: 'playing',
+          item: {
+            media_id: 10,
+            filename: 'movie.mp4',
+            started_at: '2026-01-01T12:00:00Z',
+            seek_sec: 10,
+            duration_sec: 600,
+            remaining_sec: 590,
+          },
+          skip_offset_sec: 0,
+        },
+      ]);
+    });
+
+    const skipBtn = await screen.findByRole('button', {
+      name: /skip is unavailable for scheduled channels/i,
+    });
+    expect(skipBtn).toBeDisabled();
   });
 });

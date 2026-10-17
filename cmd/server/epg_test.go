@@ -81,6 +81,9 @@ func TestEPGHandler(t *testing.T) {
 		}
 
 		first := resp.Items[0]
+		if first.Kind != "programme" {
+			t.Errorf("first item kind = %q, want 'programme'", first.Kind)
+		}
 		if first.MediaID != 10 {
 			t.Errorf("first item media_id = %d, want 10", first.MediaID)
 		}
@@ -287,6 +290,36 @@ func TestEPGHandler(t *testing.T) {
 		// Confirm start_at is in real wall clock time (before or near now)
 		if resp.Items[0].StartAt.After(time.Now().Add(time.Second)) {
 			t.Errorf("expected start_at to be in real wall clock time, got %v", resp.Items[0].StartAt)
+		}
+	})
+
+	// 8. Scheduled channel returns slate when in gap and idle=true
+	t.Run("scheduled channel epg with slate", func(t *testing.T) {
+		if _, err := conn.Exec(`INSERT INTO channels (id, number, name, mode) VALUES (3, 103, 'Scheduled Chan', 'scheduled')`); err != nil {
+			t.Fatalf("insert channel 3: %v", err)
+		}
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/channels/3/epg?count=2", nil)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("got status %d, want 200", rec.Code)
+		}
+		var resp epgResponse
+		if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+			t.Fatalf("unmarshal error: %v", err)
+		}
+		if !resp.Idle {
+			t.Errorf("expected idle=true for scheduled channel in gap")
+		}
+		if len(resp.Items) == 0 {
+			t.Fatalf("expected at least 1 slate item, got 0")
+		}
+		if resp.Items[0].Kind != "slate" {
+			t.Errorf("expected kind 'slate', got %q", resp.Items[0].Kind)
+		}
+		if resp.Items[0].Title != "Siaran Segera Kembali" {
+			t.Errorf("expected title 'Siaran Segera Kembali', got %q", resp.Items[0].Title)
 		}
 	})
 }

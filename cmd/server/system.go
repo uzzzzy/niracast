@@ -104,6 +104,7 @@ type SystemResponse struct {
 	RunningChannels int              `json:"running_channels"`
 	FFmpeg          SystemFFmpegInfo `json:"ffmpeg"`
 	IdleClip        SystemIdleClip   `json:"idle_clip"`
+	Timezone        string           `json:"timezone"`
 }
 
 type SystemFFmpegInfo struct {
@@ -125,6 +126,7 @@ type systemHandler struct {
 	ffmpegPath    string
 	ffmpegVersion string
 	idleClipPath  string
+	timezone      string
 }
 
 func newSystemHandler(
@@ -134,7 +136,12 @@ func newSystemHandler(
 	startTime time.Time,
 	ffmpegPath string,
 	idleClipPath string,
+	timezone ...string,
 ) *systemHandler {
+	tz := "Asia/Jakarta"
+	if len(timezone) > 0 && timezone[0] != "" {
+		tz = timezone[0]
+	}
 	return &systemHandler{
 		db:            db,
 		supervisor:    supervisor,
@@ -143,6 +150,7 @@ func newSystemHandler(
 		ffmpegPath:    ffmpegPath,
 		ffmpegVersion: resolveFFmpegVersion(ffmpegPath),
 		idleClipPath:  idleClipPath,
+		timezone:      tz,
 	}
 }
 
@@ -211,6 +219,7 @@ func (h *systemHandler) system(w http.ResponseWriter, r *http.Request) {
 			Version: h.ffmpegVersion,
 		},
 		IdleClip: idleClip,
+		Timezone: h.timezone,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

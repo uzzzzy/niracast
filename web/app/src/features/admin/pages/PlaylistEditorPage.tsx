@@ -18,6 +18,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  Calendar,
   Clock,
   Film,
   GripVertical,
@@ -354,6 +355,29 @@ export function PlaylistEditorPage() {
           </Button>
         </div>
       </div>
+
+      {/* Scheduled Mode Info Banner */}
+      {channel?.mode === 'scheduled' && (
+        <Card className="border border-idle/40 bg-idle/10 p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <Calendar className="h-5 w-5 text-idle shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-fg">{t('playlist_scheduled_banner')}</p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate(`/admin/channels/${channelId}/schedule`)}
+              className="shrink-0"
+            >
+              <Calendar className="h-4 w-4 mr-1.5" />
+              <span>{t('go_to_schedule')}</span>
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Loop Timeline Bar */}
       <Card className="p-4">

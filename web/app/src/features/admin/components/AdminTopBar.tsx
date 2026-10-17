@@ -20,6 +20,7 @@ export function AdminTopBar({ onLogout, isLoggingOut = false }: AdminTopBarProps
   const getPageTitle = () => {
     const pathname = location.pathname;
     if (pathname.includes('/admin/overview')) return t('nav_overview');
+    if (pathname.match(/\/admin\/channels\/\d+\/schedule/)) return t('schedule_title');
     if (pathname.match(/\/admin\/channels\/\d+/)) return t('playlist_editor_title');
     if (pathname.includes('/admin/channels')) return t('nav_channels');
     if (pathname.includes('/admin/media')) return t('nav_media');

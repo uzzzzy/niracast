@@ -60,7 +60,7 @@ func TestDBCalculator(t *testing.T) {
 	defer conn.Close()
 	conn.Exec(`INSERT INTO channels (id, number, name) VALUES (1, 1, 'c')`)
 	conn.Exec(`INSERT INTO media_files (id, path, duration_sec) VALUES (10, '/a.mp4', 60), (11, '/b.mp4', 90)`)
-	conn.Exec(`INSERT INTO schedules (channel_id, media_id, duration_sec, position_order) VALUES (1,10,60,0),(1,11,90,1)`)
+	conn.Exec(`INSERT INTO playlist_items (channel_id, media_id, duration_sec, position_order) VALUES (1,10,60,0),(1,11,90,1)`)
 	var calc TimelineCalculator = NewDBCalculator(conn)
 	p, err := calc.GetCurrentPlayout(1, at(100))
 	if err != nil {
@@ -198,7 +198,7 @@ func TestUpcoming(t *testing.T) {
 		defer conn.Close()
 		conn.Exec(`INSERT INTO channels (id, number, name) VALUES (1, 1, 'c')`)
 		conn.Exec(`INSERT INTO media_files (id, path, duration_sec) VALUES (10, '/a.mp4', 60), (11, '/b.mp4', 90)`)
-		conn.Exec(`INSERT INTO schedules (channel_id, media_id, duration_sec, position_order) VALUES (1,10,60,0),(1,11,90,1)`)
+		conn.Exec(`INSERT INTO playlist_items (channel_id, media_id, duration_sec, position_order) VALUES (1,10,60,0),(1,11,90,1)`)
 		dbCalc := NewDBCalculator(conn)
 		items, err := dbCalc.Upcoming(1, at(100), 3)
 		if err != nil {

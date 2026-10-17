@@ -35,12 +35,13 @@ describe('ChannelsPage', () => {
 
   it('renders channels table and creates a new channel', async () => {
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Cinema TV', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Cinema TV', mode: 'loop', created_at: '2026-01-01' },
     ]);
     const createSpy = vi.spyOn(api, 'createChannel').mockResolvedValue({
       id: 2,
       number: 2,
       name: 'Sports 24',
+      mode: 'loop',
       created_at: '2026-01-02',
     });
 
@@ -61,13 +62,13 @@ describe('ChannelsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
-      expect(createSpy).toHaveBeenCalledWith({ number: 2, name: 'Sports 24' });
+      expect(createSpy).toHaveBeenCalledWith({ number: 2, name: 'Sports 24', mode: 'loop' });
     });
   });
 
   it('shows server 409 duplicate-number message inline in channel modal', async () => {
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Cinema TV', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Cinema TV', mode: 'loop', created_at: '2026-01-01' },
     ]);
     vi.spyOn(api, 'createChannel').mockRejectedValue(
       new ApiError('Channel number already exists', 409),
@@ -93,7 +94,7 @@ describe('ChannelsPage', () => {
 
   it('handles delete confirmation flow', async () => {
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Cinema TV', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Cinema TV', mode: 'loop', created_at: '2026-01-01' },
     ]);
     const deleteSpy = vi.spyOn(api, 'deleteChannel').mockResolvedValue();
 
