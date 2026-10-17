@@ -1,0 +1,69 @@
+# Product Roadmap & Architecture Decisions
+
+## Goals
+- **CMS for Streaming**: Centralized management for channels, schedules, playlists, media library, and live playout monitoring.
+- **Dedicated Viewer Page**: Clean, distraction-free viewer interface (`/watch/{id}`) featuring glass HUD, now/next EPG, and channel switching.
+- **Modern Web Framework**: Type-safe, declarative component system with high-performance reactive updates.
+- **Idle Streaming with Static Image**: Seamless fallback stream broadcasting a branded static card when playlists are empty or during schedule gaps.
+- **Modern Apple-like UI**: Polished visual aesthetic, refined typography, translucent glass surfaces, and minimal visual friction.
+- **Premium UX**: Spatial navigation, keyboard shortcuts, optimistic state management, and resilient player error recovery.
+- **Full Motion UI**: Cohesive physics-based transitions, spring tokens, and fluid layout morphing.
+
+## Approved Product & Architectural Decisions
+
+### Frontend Stack & Binary Delivery
+- **Technology Stack**: React 19, Vite, TypeScript, Tailwind CSS, Radix UI primitives, `motion` animation library, and TanStack Query.
+- **Packaging & Delivery**: Multi-stage Docker build with a Node build stage generating static assets, directly embedded into the Go binary via `go:embed`.
+- **Runtime Model**: Single binary and container execution with zero Node.js runtime footprint. Go standard library `net/http` handles SPA fallback routing for client paths.
+
+### Viewer Device Priority
+1. **Web / Desktop (Priority 1)**: Primary target platform with mouse hover glass HUD, keyboard shortcuts, and picture-in-picture.
+2. **Smart TV (Priority 2)**: 10-foot viewing experience with spatial D-pad remote navigation, oversized typography, and high contrast.
+3. **Mobile (Priority 3)**: Responsive touch polish, swipe gestures, and compact drawer navigation (addressed last).
+
+### Zero-CPU Idle Playout Architecture
+- **Trigger Condition**: Activates automatically when a channel playlist is empty or during programming gaps.
+- **On-Demand Lifecycle**: Idle channels are not continuous 24/7 encoders; they terminate automatically via the existing 60-second idle reaper when viewer count drops to zero.
+- **One-Time Pre-encoding**: `assets/filler/siaran_segera_kembali.jpg` is pre-encoded ONCE into a short idle clip (~720p H.264 stillimage, low bitrate, silent AAC track via FFmpeg `anullsrc`). The generated clip is cached on disk and regenerated only when the source image file changes.
+- **Runtime Copy Pipeline**: FFmpeg loops the pre-encoded clip using `-stream_loop -1 -re -c copy` through the existing copy transcode pipeline, maintaining near-zero runtime CPU load.
+- **Silent Audio Track**: Silent AAC audio track is strictly required for seamless playback compatibility on Safari, iOS, and Smart TV engines.
+- **Discontinuity Marker**: Transitions between active playlist media and the idle stream must emit an HLS `#EXT-X-DISCONTINUITY` tag (Unverified: to be verified in prototype).
+
+### Media Ingestion & File Management
+- **Directory Ingestion**: Media ingest continues to use mounted host storage via `/media`.
+- **Browser Uploads**: Browser-based file uploads are deferred until robust authentication and access control layers are active.
+
+### Authentication & Access Control
+- **Authentication**: Single administrator password configured via environment variable.
+- **Session Management**: Secure HTTP-only session cookies with CSRF protection.
+- **Protected Surface**: Authentication required on all CMS mutation and configuration endpoints.
+
+### Real-Time Playout & Status
+- **Server-Sent Events (SSE)**: Playout progress, active program details, and channel lifecycle events streamed via `GET /api/v1/events`.
+- **Status & Control APIs**: Dedicated status inspection at `GET /api/v1/channels/{id}/status` and manual skip control at `POST /api/v1/channels/{id}/skip`.
+
+### Motion System Rules
+- **Hardware Acceleration**: Animate exclusively `transform` and `opacity` properties to prevent DOM reflows.
+- **Spring Tokens & Durations**: Standardized spring transitions with fixed durations: 120ms (micro-interactions), 240ms (surface reveals), and 350ms (page transitions).
+- **Accessibility**: Honor `prefers-reduced-motion` system settings unconditionally.
+- **Video Overlays**: Avoid GPU-intensive `backdrop-blur` directly over active video rendering viewports.
+- **Lite Motion**: Provide an explicit lite-motion mode for resource-constrained hardware.
+
+## Phased Roadmap
+
+| Phase | Branch | Scope Summary | Done Criterion |
+|---|---|---|---|
+| 1 | `feature/playout-supervisor-idle` | Playout supervisor auto-advancing playlist items, pre-encoded idle video generator, and copy-loop fallback on empty channels. | Playout rolls seamlessly between playlist items and falls back to low-CPU idle card without 404s. |
+| 2 | `feature/admin-auth` | Admin env password verification, HTTP-only cookie sessions, CSRF protection, SSE event stream (`/api/v1/events`), and channel status/skip APIs. | Unauthenticated CMS mutations are rejected and playout events stream live over SSE. |
+| 3 | `feature/frontend-scaffold` | React 19 + Vite setup in `web/`, Dockerfile Node build stage, binary embedding via `go:embed`, and SPA fallback routing. | Go server serves the compiled React single-page app on root and unknown routes from a single container. |
+| 4 | `feature/viewer-page` | Dedicated viewer (`/watch/{id}`) with custom `hls.js` hook (exponential backoff), glass HUD, channel switcher, and Now/Next EPG. | Desktop browser plays channel HLS stream with operational glass HUD overlay and channel selector. |
+| 5 | `feature/cms-studio` | CMS dashboard: media file library viewer, drag-and-drop playlist reordering, visual schedule planner, and live status monitor. | Operator can reorder channel playlist via drag-and-drop and skip currently playing track via UI. |
+| 6 | `feature/motion-system` | Physics spring animation tokens, View Transitions integration, layout morphing, and lite-motion fallback toggle. | UI transitions smoothly with zero layout reflows and honors system reduced-motion preferences. |
+| 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | Viewer page navigable entirely via arrow keys and Enter on TV browser simulation. |
+| 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | Web app functions responsively on standard mobile screen sizes without horizontal clipping. |
+
+## Open & Unverified Questions
+- **Unverified:** Manifest discontinuity behavior: Verify player stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode-copy switching on Safari and Smart TVs.
+- **Unverified:** View Transitions API cross-browser support and performance impact alongside concurrent HLS video playback.
+- **Unverified:** Performance on weak devices: Profile motion system and DOM complexity under 4x CPU throttling.
+- **Unverified:** Bundle size targets (<150KB initial JS) are design goals, not verified measurements.
