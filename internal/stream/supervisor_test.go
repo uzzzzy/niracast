@@ -521,3 +521,37 @@ func TestSupervisor_OutputDirNotWipedBetweenItems(t *testing.T) {
 		t.Error("output directory was wiped between items; segment0.ts was removed")
 	}
 }
+
+func TestSupervisor_StopStreamAndRunningCount(t *testing.T) {
+	ctrl := newFakeController()
+	active := &fakeActive{}
+	sup := NewSupervisor(&fakeResolver{}, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if sup.RunningCount() != 0 {
+		t.Errorf("initial RunningCount = %d, want 0", sup.RunningCount())
+	}
+
+	sup.Ensure(ctx, 42)
+	if !waitCond(t, 2*time.Second, func() bool { return sup.RunningCount() == 1 }) {
+		t.Fatalf("expected RunningCount=1 after Ensure")
+	}
+
+	if err := sup.StopStream(42); err != nil {
+		t.Errorf("StopStream returned error: %v", err)
+	}
+
+	if sup.RunningCount() != 0 {
+		t.Errorf("RunningCount after StopStream = %d, want 0", sup.RunningCount())
+	}
+	if ctrl.IsRunning(42) {
+		t.Errorf("expected controller stream to be stopped for channel 42")
+	}
+
+	st := sup.Status(42)
+	if st.State != "stopped" {
+		t.Errorf("expected Status.State = 'stopped', got %q", st.State)
+	}
+}

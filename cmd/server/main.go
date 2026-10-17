@@ -48,7 +48,10 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	go scanLoop(ctx, conn, mediaDir, 5*time.Minute)
+	startTime := time.Now().UTC()
+
+	mediaScanner := newMediaScanner(conn, mediaDir)
+	go scanLoop(ctx, mediaScanner, 5*time.Minute)
 
 	ctrl := stream.NewFFmpegController(ffmpegPath)
 	sessions := stream.NewSessionManager(ctrl, transcodeDir+"/channels")
@@ -89,6 +92,7 @@ func main() {
 
 	statusH := newStatusHandler(conn, supervisor, hub)
 	epgH := newEPGHandler(conn, supervisor, calc)
+	systemH := newSystemHandler(conn, supervisor, mediaScanner, startTime, ffmpegPath, idleClip)
 
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
@@ -111,11 +115,12 @@ func main() {
 	})
 
 	mux := http.NewServeMux()
-	api.NewChannelHandler(conn).Register(mux)
+	api.NewChannelHandler(conn, supervisor).Register(mux)
 	feed.NewHandler(conn).Register(mux)
 	authHandler.Register(mux)
 	statusH.register(mux)
 	epgH.register(mux)
+	systemH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
 	// spaFS is rooted at app/dist/app inside the embedded web.Dist FS.
