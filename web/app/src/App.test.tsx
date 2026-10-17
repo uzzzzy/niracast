@@ -74,7 +74,7 @@ describe('App routing', () => {
     expect(screen.getByText('classic_movie.mp4')).toBeInTheDocument();
   });
 
-  it('renders admin shell placeholder with auth check', async () => {
+  it('renders admin login card when unauthenticated', async () => {
     vi.spyOn(apiModule.api, 'getAuthMe').mockResolvedValue({
       authenticated: false,
       csrf: '',
@@ -82,8 +82,7 @@ describe('App routing', () => {
 
     renderWithProviders('/admin');
 
-    expect(await screen.findByText('Admin Shell Placeholder')).toBeInTheDocument();
-    expect(screen.getByText('Unauthenticated')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /sign in|masuk/i })).toBeInTheDocument();
   });
 
   it('renders not found page on unknown routes', async () => {

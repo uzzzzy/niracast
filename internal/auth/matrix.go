@@ -30,8 +30,12 @@ type AccessRule struct {
 // | /api/v1/channels (mutations)     | POST                | PROTECTED | Create channel                    |
 // | /api/v1/channels/{id} (mutations)| PUT, DELETE         | PROTECTED | Update/delete channel             |
 // | /api/v1/channels/{id}/playlist   | POST                | PROTECTED | Set playlist                      |
+// | /api/v1/channels/{id}/playlist   | GET                 | PROTECTED | Channel playlist items (ph 5a)    |
 // | /api/v1/channels/{id}/skip       | POST                | PROTECTED | Skip current item (phase 2b)      |
 // | /api/v1/media                    | GET, HEAD           | PROTECTED | Media library listing             |
+// | /api/v1/media/rescan             | POST                | PROTECTED | Trigger media rescan (phase 5a)   |
+// | /api/v1/media/scan-status        | GET, HEAD           | PROTECTED | Media scan status (phase 5a)      |
+// | /api/v1/system                   | GET, HEAD           | PROTECTED | System status & info (phase 5a)   |
 // | /api/v1/events                   | GET                 | PROTECTED | SSE event stream                  |
 // | (all other /api/v1/*)            | ANY                 | PROTECTED | Default deny for API mutations    |
 // +----------------------------------+---------------------+-----------+-----------------------------------+
@@ -47,8 +51,12 @@ var AccessMatrix = []AccessRule{
 	{Pattern: "/api/v1/channels", Methods: []string{"POST"}, Protected: true, Comment: "Create channel"},
 	{Pattern: "/api/v1/channels/{id}", Methods: []string{"PUT", "DELETE"}, Protected: true, Comment: "Update / delete channel"},
 	{Pattern: "/api/v1/channels/{id}/playlist", Methods: []string{"POST"}, Protected: true, Comment: "Set channel playlist"},
+	{Pattern: "/api/v1/channels/{id}/playlist", Methods: []string{"GET"}, Protected: true, Comment: "Get channel playlist"},
 	{Pattern: "/api/v1/channels/{id}/skip", Methods: []string{"POST"}, Protected: true, Comment: "Skip current playing item"},
 	{Pattern: "/api/v1/media", Methods: []string{"GET"}, Protected: true, Comment: "Media index"},
+	{Pattern: "/api/v1/media/rescan", Methods: []string{"POST"}, Protected: true, Comment: "Trigger media rescan"},
+	{Pattern: "/api/v1/media/scan-status", Methods: []string{"GET", "HEAD"}, Protected: true, Comment: "Media scan status"},
+	{Pattern: "/api/v1/system", Methods: []string{"GET", "HEAD"}, Protected: true, Comment: "System info"},
 	{Pattern: "/api/v1/events", Methods: []string{"GET"}, Protected: true, Comment: "SSE events"},
 }
 

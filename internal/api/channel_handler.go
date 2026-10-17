@@ -10,12 +10,24 @@ import (
 	"tv-stream/internal/models"
 )
 
-// ChannelHandler serves channel & playlist CRUD endpoints.
-type ChannelHandler struct {
-	DB *sql.DB
+// PlayoutStopper terminates stream playout for a channel.
+type PlayoutStopper interface {
+	StopStream(channelID int64) error
 }
 
-func NewChannelHandler(db *sql.DB) *ChannelHandler { return &ChannelHandler{DB: db} }
+// ChannelHandler serves channel & playlist CRUD endpoints.
+type ChannelHandler struct {
+	DB      *sql.DB
+	Stopper PlayoutStopper
+}
+
+func NewChannelHandler(db *sql.DB, stopper ...PlayoutStopper) *ChannelHandler {
+	var s PlayoutStopper
+	if len(stopper) > 0 {
+		s = stopper[0]
+	}
+	return &ChannelHandler{DB: db, Stopper: s}
+}
 
 // Register mounts routes on mux (Go 1.22+ pattern routing).
 func (h *ChannelHandler) Register(mux *http.ServeMux) {
@@ -24,6 +36,7 @@ func (h *ChannelHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/channels/{id}", h.get)
 	mux.HandleFunc("PUT /api/v1/channels/{id}", h.update)
 	mux.HandleFunc("DELETE /api/v1/channels/{id}", h.delete)
+	mux.HandleFunc("GET /api/v1/channels/{id}/playlist", h.getPlaylist)
 	mux.HandleFunc("POST /api/v1/channels/{id}/playlist", h.setPlaylist)
 }
 
@@ -140,7 +153,23 @@ func (h *ChannelHandler) delete(w http.ResponseWriter, r *http.Request) {
 		chHandleModelErr(w, err)
 		return
 	}
-	chWriteJSON(w, http.StatusOK, map[string]any{"deleted": id})
+	if h.Stopper != nil {
+		_ = h.Stopper.StopStream(id)
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ChannelHandler) getPlaylist(w http.ResponseWriter, r *http.Request) {
+	id, ok := chPathID(w, r)
+	if !ok {
+		return
+	}
+	pl, err := models.GetPlaylist(h.DB, id)
+	if err != nil {
+		chHandleModelErr(w, err)
+		return
+	}
+	chWriteJSON(w, http.StatusOK, pl)
 }
 
 func (h *ChannelHandler) setPlaylist(w http.ResponseWriter, r *http.Request) {

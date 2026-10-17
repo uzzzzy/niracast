@@ -1,74 +1,102 @@
-import { useQuery } from '@tanstack/react-query';
-import { Lock, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { Link } from 'react-router';
-import { api } from '../lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Navigate, Route, Routes } from 'react-router';
+import { AdminShell } from '../features/admin/components/AdminShell';
+import { LoginCard } from '../features/admin/components/LoginCard';
+import { ChannelsPage } from '../features/admin/pages/ChannelsPage';
+import { MediaPage } from '../features/admin/pages/MediaPage';
+import { OverviewPage } from '../features/admin/pages/OverviewPage';
+import { PlaylistEditorPage } from '../features/admin/pages/PlaylistEditorPage';
+import { SystemPage } from '../features/admin/pages/SystemPage';
+import { api, onUnauthorized } from '../lib/api';
 
 export default function AdminPage() {
+  const queryClient = useQueryClient();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const {
     data: auth,
-    isLoading,
-    error,
+    isLoading: isAuthLoading,
+    refetch: refetchAuth,
   } = useQuery({
     queryKey: ['auth-me'],
     queryFn: api.getAuthMe,
+    retry: false,
   });
 
-  if (isLoading) {
+  const { data: channels } = useQuery({
+    queryKey: ['admin-channels'],
+    queryFn: api.getChannels,
+    enabled: isAuthenticated === true,
+  });
+
+  useEffect(() => {
+    if (auth) {
+      setIsAuthenticated(auth.authenticated);
+    }
+  }, [auth]);
+
+  // Listen for 401 unauthorized notifications from apiFetch
+  useEffect(() => {
+    const unsubscribe = onUnauthorized(() => {
+      setIsAuthenticated(false);
+      setSessionExpired(true);
+      queryClient.setQueryData(['auth-me'], { authenticated: false, csrf: '' });
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
+  const handleLoginSuccess = async () => {
+    setSessionExpired(false);
+    setIsAuthenticated(true);
+    await refetchAuth();
+    queryClient.invalidateQueries({ queryKey: ['admin-channels'] });
+    queryClient.invalidateQueries({ queryKey: ['system-info'] });
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await api.logout();
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      setIsLoggingOut(false);
+      setIsAuthenticated(false);
+      setSessionExpired(false);
+      queryClient.setQueryData(['auth-me'], { authenticated: false, csrf: '' });
+      queryClient.clear();
+    }
+  };
+
+  if (isAuthLoading || isAuthenticated === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-neutral-400">
-        <div className="text-sm">Checking admin authorization...</div>
+      <div className="flex min-h-screen items-center justify-center bg-[#0B0B0E] text-neutral-400">
+        <Loader2 className="h-6 w-6 animate-spin text-[#0A84FF]" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-        <ShieldAlert className="mb-4 h-12 w-12 text-red-500" />
-        <h1 className="text-xl font-semibold text-neutral-100">Auth Check Failed</h1>
-        <p className="mt-2 text-sm text-neutral-400">{error.message}</p>
-      </div>
-    );
+  if (!isAuthenticated) {
+    return <LoginCard onSuccess={handleLoginSuccess} sessionExpired={sessionExpired} />;
   }
+
+  const firstChannelId = channels?.[0]?.id ?? 1;
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0B0B0E] text-[#F5F5F7]">
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <Lock className="h-6 w-6 text-[#0A84FF]" />
-          <h1 className="text-lg font-semibold">CMS Studio Admin</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {auth?.authenticated ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-950 px-3 py-1 text-xs font-medium text-emerald-400 border border-emerald-800/50">
-              <ShieldCheck className="h-3.5 w-3.5" /> Authenticated
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 rounded-full bg-amber-950 px-3 py-1 text-xs font-medium text-amber-400 border border-amber-800/50">
-              <ShieldAlert className="h-3.5 w-3.5" /> Unauthenticated
-            </span>
-          )}
-        </div>
-      </header>
-
-      <main className="flex flex-1 items-center justify-center p-6">
-        <div className="w-full max-w-xl rounded-xl border border-white/10 bg-[#16161B] p-8 text-center shadow-2xl">
-          <h2 className="text-xl font-bold tracking-tight">Admin Shell Placeholder</h2>
-          <p className="mt-2 text-sm text-neutral-400">
-            {auth?.authenticated
-              ? 'Operator session active. Playout control, schedule planner, and media library will be introduced in Phase 5.'
-              : 'Sign in through the operator login modal to access administrative tools.'}
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <Link
-              to="/"
-              className="rounded-md border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
-            >
-              Go to Viewer
-            </Link>
-          </div>
-        </div>
-      </main>
-    </div>
+    <AdminShell onLogout={handleLogout} isLoggingOut={isLoggingOut} firstChannelId={firstChannelId}>
+      <Routes>
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<OverviewPage />} />
+        <Route path="channels" element={<ChannelsPage />} />
+        <Route path="channels/:id" element={<PlaylistEditorPage />} />
+        <Route path="media" element={<MediaPage />} />
+        <Route path="system" element={<SystemPage />} />
+        <Route path="*" element={<Navigate to="overview" replace />} />
+      </Routes>
+    </AdminShell>
   );
 }

@@ -30,6 +30,12 @@
   - Exact `hls.js` 1.7.3 pinned and isolated into a dedicated manual vendor chunk (`hls`) in `vite.config.ts` to prevent bloating the main app bundle.
   - Real browser mount timing bug: When `ViewerPage` loads, the video element is only mounted after the asynchronous channel query completes. An initial hook effect using a standard `useRef` ran once when the ref was still `null`, leaving playback uninitialized. Fixed by holding the video element in React state (`videoEl`) so the player effect triggers immediately when the DOM node attaches, backed by a regression test.
   - Verification lesson: Unit tests using a mocked `hls.js` missed the lifecycle timing mismatch entirely because the mock executed synchronously against synthetic DOM nodes; always perform real-browser playback checks.
+- **Phase 5 CMS Studio Decisions**:
+  - Dependencies added: `@dnd-kit/core` 6.3.1, `@dnd-kit/sortable` 10.0.0, `@dnd-kit/utilities` 3.2.2, and `sonner` 2.0.8, kept isolated in the lazy `admin` chunk in `vite.config.ts`.
+  - Minimal stack: No Radix UI or external form libraries added; used native HTML `<dialog>` elements and lightweight controlled forms to avoid runtime bloat.
+  - Schedule planner deferred: Visual schedule planner was deliberately not built here because F1 (scheduled broadcast) in the roadmap Future Plan owns calendar slot resolution.
+  - Filler management view-only: Filler management is view-only on the System page; idle card generation remains automated server-side.
 - **2026-10-17**: Future plan recorded: scheduled broadcast (F1) and realtime analytics (F2), not scheduled yet; see docs/ROADMAP.md.
+
 
 

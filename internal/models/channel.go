@@ -176,3 +176,60 @@ func SetPlaylist(db *sql.DB, channelID int64, mediaIDs []int64) ([]PlaylistItem,
 	}
 	return items, nil
 }
+
+// ChannelPlaylistItem is an entry in the channel playlist response.
+type ChannelPlaylistItem struct {
+	MediaID     int64   `json:"media_id"`
+	Position    int     `json:"position"`
+	Filename    string  `json:"filename"`
+	DurationSec float64 `json:"duration_sec"`
+}
+
+// ChannelPlaylistResponse is returned by GET /api/v1/channels/{id}/playlist.
+type ChannelPlaylistResponse struct {
+	ChannelID        int64                 `json:"channel_id"`
+	Items            []ChannelPlaylistItem `json:"items"`
+	TotalDurationSec float64               `json:"total_duration_sec"`
+}
+
+// GetPlaylist retrieves the ordered playlist and total duration for channelID.
+func GetPlaylist(db *sql.DB, channelID int64) (*ChannelPlaylistResponse, error) {
+	var exists int
+	err := db.QueryRow(`SELECT 1 FROM channels WHERE id = ?`, channelID).Scan(&exists)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("check channel: %w", err)
+	}
+
+	rows, err := db.Query(`SELECT s.media_id, s.position_order, COALESCE(m.filename, ''), COALESCE(s.duration_sec, m.duration_sec, 0)
+		FROM schedules s
+		LEFT JOIN media_files m ON m.id = s.media_id
+		WHERE s.channel_id = ?
+		ORDER BY s.position_order ASC, s.id ASC`, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("query playlist items: %w", err)
+	}
+	defer rows.Close()
+
+	items := []ChannelPlaylistItem{}
+	var totalDur float64
+	for rows.Next() {
+		var it ChannelPlaylistItem
+		if err := rows.Scan(&it.MediaID, &it.Position, &it.Filename, &it.DurationSec); err != nil {
+			return nil, fmt.Errorf("scan playlist item: %w", err)
+		}
+		totalDur += it.DurationSec
+		items = append(items, it)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate playlist items: %w", err)
+	}
+
+	return &ChannelPlaylistResponse{
+		ChannelID:        channelID,
+		Items:            items,
+		TotalDurationSec: totalDur,
+	}, nil
+}

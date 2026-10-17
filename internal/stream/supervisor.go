@@ -491,6 +491,32 @@ func (s *Supervisor) RunningStatuses() []ChannelStatus {
 	return result
 }
 
+// RunningCount returns the number of channels currently running a playout loop.
+func (s *Supervisor) RunningCount() int {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.active)
+}
+
+// StopStream stops playout for channelID: cancels and removes the active loop,
+// and terminates the underlying FFmpeg process.
+func (s *Supervisor) StopStream(channelID int64) error {
+	s.mu.Lock()
+	cancel, running := s.active[channelID]
+	delete(s.active, channelID)
+	delete(s.statuses, channelID)
+	delete(s.skipOffsets, channelID)
+	delete(s.skipped, channelID)
+	s.mu.Unlock()
+	if running && cancel != nil {
+		cancel()
+	}
+	return s.ctrl.StopStream(channelID)
+}
+
 // Skip advances the playout timeline to the next item by adding the current item's
 // RemainingSec (computed from calc.GetCurrentPlayout) to the per-channel in-memory skipOffset,
 // and terminates the active FFmpeg process so the loop immediately resolves the next item.
