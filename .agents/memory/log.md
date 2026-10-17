@@ -10,3 +10,4 @@ Append-only history of work sessions and milestones. Add newest entries at the b
 ## 2026-10-17
 - `.agents/` cleaned up: removed legacy micro-task plans and orchestrator specs.
 - Rebuilt cross-agent shared memory system and task templates.
+- Generated filler card `assets/filler/siaran_segera_kembali.jpg`.
