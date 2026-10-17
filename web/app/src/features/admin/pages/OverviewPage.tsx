@@ -10,10 +10,12 @@ import {
   SkipForward,
   Tv,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { ApiError, api, type Channel, type ChannelStatus } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
+import { DURATION, EASE, getStaggerDelay } from '../../../lib/motion/tokens';
 import { useAdminEvents } from '../hooks/useAdminEvents';
 import { formatDuration, parseUptime } from '../utils/playlist';
 
@@ -135,13 +137,16 @@ function ChannelMonitorCard({
             {isPlaying ? item?.filename : state === 'idle' ? t('idle_title') : '-'}
           </div>
 
-          {/* Progress bar */}
+          {/* Progress bar (transform scaleX only) */}
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
             <div
-              className={`h-full transition-all duration-300 rounded-full ${
+              className={`h-full w-full rounded-full transition-transform duration-300 ease-out ${
                 isPlaying ? 'bg-[#0A84FF]' : 'bg-neutral-600'
               }`}
-              style={{ width: `${isPlaying ? progressPct : 0}%` }}
+              style={{
+                transform: `scaleX(${isPlaying ? progressPct / 100 : 0})`,
+                transformOrigin: 'left',
+              }}
             />
           </div>
 
@@ -253,61 +258,74 @@ export function OverviewPage() {
         <p className="mt-1 text-xs text-neutral-400">{t('overview_subtitle')}</p>
       </div>
 
-      {/* Top stat tiles */}
+      {/* Top stat tiles (staggered entrance) */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Media count */}
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm">
-          <div className="flex items-center justify-between text-neutral-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">
-              {t('stat_media_count')}
-            </span>
-            <Film className="h-4 w-4 text-[#0A84FF]" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-[#F5F5F7]">
-            {isSystemLoading ? '...' : (system?.media_count ?? 0)}
-          </div>
-        </div>
-
-        {/* Total channels */}
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm">
-          <div className="flex items-center justify-between text-neutral-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">
-              {t('stat_total_channels')}
-            </span>
-            <Tv className="h-4 w-4 text-[#0A84FF]" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-[#F5F5F7]">
-            {isSystemLoading ? '...' : (system?.channel_count ?? 0)}
-          </div>
-        </div>
-
-        {/* Running channels */}
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm">
-          <div className="flex items-center justify-between text-neutral-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">
-              {t('stat_running_channels')}
-            </span>
-            <Radio className="h-4 w-4 text-emerald-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-emerald-400">
-            {isSystemLoading ? '...' : (system?.running_channels ?? 0)}
-          </div>
-        </div>
-
-        {/* System uptime */}
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm">
-          <div className="flex items-center justify-between text-neutral-400 mb-2">
-            <span className="text-xs font-medium uppercase tracking-wider">{t('stat_uptime')}</span>
-            <Clock className="h-4 w-4 text-purple-400" />
-          </div>
-          <div className="text-lg font-bold tracking-tight text-[#F5F5F7] truncate">
-            {isSystemLoading
+        {[
+          {
+            key: 'media',
+            label: t('stat_media_count'),
+            icon: Film,
+            value: isSystemLoading ? '...' : (system?.media_count ?? 0),
+            iconColor: 'text-[#0A84FF]',
+            valueColor: 'text-[#F5F5F7]',
+          },
+          {
+            key: 'channels',
+            label: t('stat_total_channels'),
+            icon: Tv,
+            value: isSystemLoading ? '...' : (system?.channel_count ?? 0),
+            iconColor: 'text-[#0A84FF]',
+            valueColor: 'text-[#F5F5F7]',
+          },
+          {
+            key: 'running',
+            label: t('stat_running_channels'),
+            icon: Radio,
+            value: isSystemLoading ? '...' : (system?.running_channels ?? 0),
+            iconColor: 'text-emerald-400',
+            valueColor: 'text-emerald-400',
+          },
+          {
+            key: 'uptime',
+            label: t('stat_uptime'),
+            icon: Clock,
+            value: isSystemLoading
               ? '...'
               : uptime.days > 0
                 ? `${uptime.days}d ${uptime.hours}h ${uptime.mins}m`
-                : `${uptime.hours}h ${uptime.mins}m ${uptime.secs}s`}
-          </div>
-        </div>
+                : `${uptime.hours}h ${uptime.mins}m ${uptime.secs}s`,
+            iconColor: 'text-purple-400',
+            valueColor: 'text-[#F5F5F7]',
+            isUptime: true,
+          },
+        ].map((tile, idx) => {
+          const Icon = tile.icon;
+          return (
+            <motion.div
+              key={tile.key}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: DURATION.normal,
+                delay: getStaggerDelay(idx, 0.04),
+                ease: EASE.spring,
+              }}
+              className="rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-sm"
+            >
+              <div className="flex items-center justify-between text-neutral-400 mb-2">
+                <span className="text-xs font-medium uppercase tracking-wider">{tile.label}</span>
+                <Icon className={`h-4 w-4 ${tile.iconColor}`} />
+              </div>
+              <div
+                className={`font-bold tracking-tight ${tile.valueColor} ${
+                  tile.isUptime ? 'text-lg truncate' : 'text-2xl'
+                }`}
+              >
+                {tile.value}
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Global Feeds Bar */}
@@ -359,14 +377,28 @@ export function OverviewPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {channels?.map((channel) => (
-            <ChannelMonitorCard
-              key={channel.id}
-              channel={channel}
-              status={statuses[channel.id]}
-              onSkip={handleSkipChannel}
-            />
-          ))}
+          <AnimatePresence>
+            {channels?.map((channel, idx) => (
+              <motion.div
+                key={channel.id}
+                layout
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{
+                  duration: DURATION.normal,
+                  delay: getStaggerDelay(idx, 0.03),
+                  ease: EASE.spring,
+                }}
+              >
+                <ChannelMonitorCard
+                  channel={channel}
+                  status={statuses[channel.id]}
+                  onSkip={handleSkipChannel}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>

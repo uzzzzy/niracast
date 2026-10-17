@@ -82,7 +82,9 @@ describe('App routing', () => {
 
     renderWithProviders('/admin');
 
-    expect(await screen.findByRole('button', { name: /sign in|masuk/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /sign in|masuk/i }, { timeout: 3000 }),
+    ).toBeInTheDocument();
   });
 
   it('renders not found page on unknown routes', async () => {

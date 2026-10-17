@@ -148,11 +148,14 @@ export const HudOverlay: React.FC<HudOverlayProps> = ({
             )}
           </div>
 
-          {/* Thin Progress Bar */}
+          {/* Thin Progress Bar (transform scaleX only) */}
           <div className="relative h-1 w-full overflow-hidden rounded-full bg-white/20">
             <div
-              className="h-full bg-[#0A84FF] transition-[width] duration-300 ease-out"
-              style={{ width: `${progressPercent}%` }}
+              className="h-full w-full bg-[#0A84FF] transition-transform duration-300 ease-out"
+              style={{
+                transform: `scaleX(${progressPercent / 100})`,
+                transformOrigin: 'left',
+              }}
             />
           </div>
 

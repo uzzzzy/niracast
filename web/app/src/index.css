@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/*
+ * Motion Design Tokens & Variables
+ * Kept in sync with `src/lib/motion/tokens.ts`:
+ *   DURATION = { fast: 0.12, normal: 0.24, slow: 0.35 } (in seconds)
+ *   EASE = { spring: [0.16, 1, 0.3, 1] }
+ */
 :root {
   --bg-primary: #0b0b0e;
   --bg-secondary: #16161b;
@@ -26,6 +32,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Base keyframe animations: strictly transform and opacity only */
 @keyframes live-dot-pulse {
   0%,
   100% {
@@ -42,6 +49,50 @@ body {
   animation: live-dot-pulse 2s infinite ease-in-out;
 }
 
+/* Skeleton shimmer: opacity pulse only, no background-position */
+@keyframes shimmer-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer-pulse 1.6s ease-in-out infinite;
+}
+
+/* Centered channel switch bump: transform and opacity only */
+@keyframes channel-bump-anim {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+}
+
+.animate-channel-bump {
+  animation: channel-bump-anim 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Transition utility classes */
 .transition-spring {
   transition-property: transform, opacity;
   transition-timing-function: var(--ease-spring);
@@ -54,7 +105,129 @@ body {
   transition-duration: var(--dur-slow);
 }
 
+/* Button active press feedback: subtle physics scale (0.97) */
+button:active:not(:disabled),
+a[role="button"]:active {
+  transform: scale(0.97);
+  transition: transform var(--dur-fast) ease-out;
+}
+
+/* Native dialog scale + opacity entry/exit */
+dialog {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--dur-normal) var(--ease-spring),
+    transform var(--dur-normal) var(--ease-spring),
+    overlay var(--dur-normal) allow-discrete,
+    display var(--dur-normal) allow-discrete;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--dur-normal) ease-out,
+    overlay var(--dur-normal) allow-discrete,
+    display var(--dur-normal) allow-discrete;
+}
+
+dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/*
+ * Lite Motion Mode:
+ * - Halved transition durations
+ * - Removes spring overshoot
+ * - Disables non-essential looping animations (live dot, shimmer)
+ */
+html[data-motion="lite"] {
+  --dur-fast: 60ms;
+  --dur-normal: 120ms;
+  --dur-slow: 175ms;
+  --ease-spring: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+html[data-motion="lite"] .animate-live-pulse {
+  animation: none !important;
+}
+
+html[data-motion="lite"] .animate-shimmer {
+  animation: none !important;
+  opacity: 0.6 !important;
+}
+
+/*
+ * Reduced Motion Mode (data-motion="reduced" and system prefers-reduced-motion):
+ * - Removes ALL transforms, translations, and scales
+ * - Keeps only 100ms opacity fades
+ * - Disables all looping animations
+ */
+html[data-motion="reduced"] {
+  --dur-fast: 100ms;
+  --dur-normal: 100ms;
+  --dur-slow: 100ms;
+  --ease-spring: ease-out;
+}
+
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] ::before,
+html[data-motion="reduced"] ::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 100ms !important;
+}
+
+html[data-motion="reduced"] .animate-live-pulse,
+html[data-motion="reduced"] .animate-shimmer {
+  animation: none !important;
+}
+
+html[data-motion="reduced"] .transition-spring,
+html[data-motion="reduced"] .reduced-motion-fade {
+  transform: none !important;
+  transition-property: opacity !important;
+  transition-duration: 100ms !important;
+}
+
+html[data-motion="reduced"] button:active,
+html[data-motion="reduced"] a[role="button"]:active {
+  transform: none !important;
+}
+
+html[data-motion="reduced"] dialog,
+html[data-motion="reduced"] dialog[open] {
+  transform: none !important;
+  transition-property: opacity !important;
+  transition-duration: 100ms !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 100ms;
+    --dur-normal: 100ms;
+    --dur-slow: 100ms;
+    --ease-spring: ease-out;
+  }
+
   *,
   ::before,
   ::after {
@@ -62,10 +235,26 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 100ms !important;
   }
-  .animate-live-pulse {
+
+  .animate-live-pulse,
+  .animate-shimmer {
     animation: none !important;
   }
+
+  .transition-spring,
   .reduced-motion-fade {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
+  }
+
+  button:active,
+  a[role="button"]:active {
+    transform: none !important;
+  }
+
+  dialog,
+  dialog[open] {
     transform: none !important;
     transition-property: opacity !important;
     transition-duration: 100ms !important;

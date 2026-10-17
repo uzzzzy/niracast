@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { AdminShell } from '../features/admin/components/AdminShell';
 import { LoginCard } from '../features/admin/components/LoginCard';
 import { ChannelsPage } from '../features/admin/pages/ChannelsPage';
@@ -10,9 +11,11 @@ import { OverviewPage } from '../features/admin/pages/OverviewPage';
 import { PlaylistEditorPage } from '../features/admin/pages/PlaylistEditorPage';
 import { SystemPage } from '../features/admin/pages/SystemPage';
 import { api, onUnauthorized } from '../lib/api';
+import { DURATION, EASE } from '../lib/motion/tokens';
 
 export default function AdminPage() {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -88,15 +91,32 @@ export default function AdminPage() {
 
   return (
     <AdminShell onLogout={handleLogout} isLoggingOut={isLoggingOut} firstChannelId={firstChannelId}>
-      <Routes>
-        <Route index element={<Navigate to="overview" replace />} />
-        <Route path="overview" element={<OverviewPage />} />
-        <Route path="channels" element={<ChannelsPage />} />
-        <Route path="channels/:id" element={<PlaylistEditorPage />} />
-        <Route path="media" element={<MediaPage />} />
-        <Route path="system" element={<SystemPage />} />
-        <Route path="*" element={<Navigate to="overview" replace />} />
-      </Routes>
+      {/*
+        Route transitions use AnimatePresence mode='wait' because:
+        1. Universal cross-browser reliability without depending on experimental View Transitions flags.
+        2. Seamless integration with MotionConfig and reduced-motion states.
+        3. Prevents layout shift or video interruption by animating opacity and translateY (transform only).
+      */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: DURATION.normal, ease: EASE.spring }}
+          className="min-h-full"
+        >
+          <Routes location={location}>
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<OverviewPage />} />
+            <Route path="channels" element={<ChannelsPage />} />
+            <Route path="channels/:id" element={<PlaylistEditorPage />} />
+            <Route path="media" element={<MediaPage />} />
+            <Route path="system" element={<SystemPage />} />
+            <Route path="*" element={<Navigate to="overview" replace />} />
+          </Routes>
+        </motion.div>
+      </AnimatePresence>
     </AdminShell>
   );
 }
