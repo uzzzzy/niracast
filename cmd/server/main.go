@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"tv-stream/internal/api"
+	"tv-stream/internal/auth"
 	"tv-stream/internal/db"
+	"tv-stream/internal/events"
 	"tv-stream/internal/feed"
 	"tv-stream/internal/stream"
 	"tv-stream/internal/timeline"
@@ -71,6 +73,9 @@ func main() {
 		transcodeDir+"/channels",
 	)
 
+	hub := events.NewHub()
+	supervisor.SetPublisher(hub)
+
 	hls := &hlsHandler{
 		ctx:        ctx,
 		db:         conn,
@@ -81,9 +86,33 @@ func main() {
 		root:       transcodeDir + "/channels",
 	}
 
+	statusH := newStatusHandler(conn, supervisor, hub)
+
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		adminPassword = auth.GenerateRandomPassword(20)
+		log.Printf("WARNING: ADMIN_PASSWORD is empty. Generated random admin password: %s", adminPassword)
+	}
+
+	sessionSecretStr := os.Getenv("SESSION_SECRET")
+	var sessionSecret []byte
+	if sessionSecretStr == "" {
+		sessionSecret = auth.GenerateRandomBytes(32)
+		log.Printf("SESSION_SECRET is empty; generated random ephemeral secret (sessions will reset on restart)")
+	} else {
+		sessionSecret = []byte(sessionSecretStr)
+	}
+
+	authHandler := auth.New(auth.Config{
+		AdminPassword: adminPassword,
+		SessionSecret: sessionSecret,
+	})
+
 	mux := http.NewServeMux()
 	api.NewChannelHandler(conn).Register(mux)
 	feed.NewHandler(conn).Register(mux)
+	authHandler.Register(mux)
+	statusH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
@@ -91,7 +120,8 @@ func main() {
 		http.Redirect(w, r, "/static/", http.StatusFound)
 	})
 
-	srv := &http.Server{Addr: addr, Handler: mux}
+	handler := authHandler.Protect(mux, nil)
+	srv := &http.Server{Addr: addr, Handler: handler}
 	go func() {
 		<-ctx.Done()
 		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)

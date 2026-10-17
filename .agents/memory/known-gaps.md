@@ -5,4 +5,8 @@
 - **Image Size**: The current Docker production image is ~209MB. Target: addressed during multi-stage Docker pipeline refinement in Roadmap Phase 3 (`feature/frontend-scaffold`).
 - **Discontinuity Across Clients (Unverified)**: Safari and Smart TV client stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode/copy switches.
 - **Playout Boundary Edge Case (Unverified)**: When a playlist item resolves with <1s remaining time, supervisor may restart the same file instead of cleanly rolling to the next item.
+- **Skip Offset Volatility**: Playout skip offset is stored in-memory only and is lost on restart.
+- **SSE Browser Verification**: Server-Sent Events (`GET /api/v1/events`) have only been verified with `curl` and `httptest`, not yet within a real browser `EventSource` client.
+- **Database Migrations**: No migration runner needed yet as Phase 2 introduced no database schema changes.
+- **First Manifest Wait in Copy Mode**: First manifest generation wait equals the source GOP length for copy mode (`sample.mp4` with 10s keyframes took ~9s, while real movies take 2.5–5s).
 

@@ -19,4 +19,13 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - FFmpeg flag fixes: `discont_start`, permanent `omit_endlist`, and `-map 0:v:0 -map 0:a:0? -sn -dn` stream isolation.
   - Verified: E2E with real movies in `sample/` via copy mode; MKV with embedded subtitles fixed; idle->real switch with discontinuity; Docker container ~2% CPU and ~32MiB with 2 channels; manifest first byte ~2s idle / ~3.5s playlist.
   - Unverified: Safari/Smart-TV behaviour across discontinuities; tiny-remaining-time edge case when an item resolves with <1s left may restart the same file.
+- **Phase 2 Admin Auth, Playout Status & SSE Event Stream Completed** (`feature/admin-auth`):
+  - Repository normalization: `.gitattributes` forces LF line endings repository-wide and binary for media assets, eliminating CRLF discrepancies under `core.autocrlf=true`.
+  - Admin authentication (`internal/auth`): HMAC-SHA256 signed session cookie (`tvs_session`, 12h TTL), CSRF double-submit token (`X-CSRF-Token`), rate limiting (5 attempts/min per `RemoteAddr` via `golang.org/x/time/rate`), and route access matrix in `internal/auth/matrix.go`.
+  - Auth routes: `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`, `GET /api/v1/auth/me`.
+  - Real-time SSE hub (`internal/events`): Non-blocking pub/sub dispatcher streaming channel status and playout events to `GET /api/v1/events` (protected).
+  - Playout inspection and skip: Added `GET /api/v1/channels/{id}/status` (public) and manual item skip `POST /api/v1/channels/{id}/skip` (protected, shifts supervisor timeline).
+  - Legacy dashboard update: Added temporary login modal and session handling to vanilla UI until Phase 5.
+  - Verified: Unit tests, route matrix, and E2E HTTP integration tests passed; live `curl` test validated login/logout, CSRF rejection, 429 rate limiting, protected CMS gate, real-time SSE event reception, JSON status inspection, and timeline skip; Docker container run validated with zero regressions.
+
 
