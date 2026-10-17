@@ -36,7 +36,10 @@ type AccessRule struct {
 // | /api/v1/media/rescan             | POST                | PROTECTED | Trigger media rescan (phase 5a)   |
 // | /api/v1/media/scan-status        | GET, HEAD           | PROTECTED | Media scan status (phase 5a)      |
 // | /api/v1/system                   | GET, HEAD           | PROTECTED | System status & info (phase 5a)   |
-// | /api/v1/events                   | GET                 | PROTECTED | SSE event stream                  |
+// | /api/v1/channels/{id}/schedule/slots/{slotId} | PUT, DELETE | PROTECTED | Update / delete schedule slot |
+// | /api/v1/analytics/live           | GET                 | PROTECTED | Live analytics & concurrency      |
+// | /api/v1/analytics/timeseries     | GET                 | PROTECTED | Historical audience timeseries    |
+// | /api/v1/analytics/top-media      | GET                 | PROTECTED | Top watched media items           |
 // | (all other /api/v1/*)            | ANY                 | PROTECTED | Default deny for API mutations    |
 // +----------------------------------+---------------------+-----------+-----------------------------------+
 var AccessMatrix = []AccessRule{
@@ -61,6 +64,9 @@ var AccessMatrix = []AccessRule{
 	{Pattern: "/api/v1/channels/{id}/schedule", Methods: []string{"GET"}, Protected: true, Comment: "Get channel schedule"},
 	{Pattern: "/api/v1/channels/{id}/schedule/slots", Methods: []string{"POST"}, Protected: true, Comment: "Create schedule slot"},
 	{Pattern: "/api/v1/channels/{id}/schedule/slots/{slotId}", Methods: []string{"PUT", "DELETE"}, Protected: true, Comment: "Update / delete schedule slot"},
+	{Pattern: "/api/v1/analytics/live", Methods: []string{"GET"}, Protected: true, Comment: "Live analytics & concurrency"},
+	{Pattern: "/api/v1/analytics/timeseries", Methods: []string{"GET"}, Protected: true, Comment: "Historical audience timeseries"},
+	{Pattern: "/api/v1/analytics/top-media", Methods: []string{"GET"}, Protected: true, Comment: "Top watched media items"},
 }
 
 // IsPublic evaluates whether the incoming request matches public routes that require no auth.

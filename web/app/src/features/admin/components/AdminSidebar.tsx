@@ -1,4 +1,5 @@
 import {
+  ChartLine,
   ExternalLink,
   Film,
   LayoutDashboard,
@@ -57,6 +58,11 @@ export function AdminSidebar({
           to: '/admin/channels',
           label: t('nav_channels'),
           icon: Tv,
+        },
+        {
+          to: '/admin/analytics',
+          label: t('nav_analytics'),
+          icon: ChartLine,
         },
       ],
     },

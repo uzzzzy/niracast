@@ -34,6 +34,8 @@ type ChannelStatus struct {
 	SeekSeconds   float64   `json:"seek_seconds,omitempty"`
 	RemainingSec  float64   `json:"remaining_sec,omitempty"`
 	SkipOffsetSec float64   `json:"skip_offset_sec"`
+	Restarts      int       `json:"restarts"`
+	LastError     string    `json:"last_error,omitempty"`
 }
 
 // CodecLookup resolves audio/video codec metadata for a media file by ID.
@@ -73,6 +75,12 @@ type Supervisor struct {
 	// statuses tracks current per-channel state.
 	statuses map[int64]ChannelStatus
 
+	// restarts tracks process restart count per channel.
+	restarts map[int64]int
+
+	// lastErrors tracks the most recent error message per channel.
+	lastErrors map[int64]string
+
 	// skipped records manual skip triggers so the loop immediately advances without penalty.
 	skipped map[int64]bool
 
@@ -110,6 +118,8 @@ func NewSupervisor(
 		active:      make(map[int64]context.CancelFunc),
 		skipOffsets: make(map[int64]float64),
 		statuses:    make(map[int64]ChannelStatus),
+		restarts:    make(map[int64]int),
+		lastErrors:  make(map[int64]string),
 		skipped:     make(map[int64]bool),
 	}
 }
@@ -135,6 +145,36 @@ func (s *Supervisor) publish(ev events.Event) {
 	if p != nil {
 		p.Publish(ev)
 	}
+}
+
+func (s *Supervisor) recordHealth(channelID int64, incRestart bool, lastErr string) {
+	s.mu.Lock()
+	if incRestart {
+		s.restarts[channelID]++
+	}
+	if lastErr != "" {
+		s.lastErrors[channelID] = lastErr
+	}
+	restarts := s.restarts[channelID]
+	errStr := s.lastErrors[channelID]
+	s.mu.Unlock()
+
+	s.publish(events.Event{
+		Type:      "channel.health",
+		ChannelID: channelID,
+		Data: map[string]any{
+			"restarts":   restarts,
+			"last_error": errStr,
+		},
+		Time: time.Now(),
+	})
+}
+
+// Health returns the restart count and last error for channelID.
+func (s *Supervisor) Health(channelID int64) (int, string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.restarts[channelID], s.lastErrors[channelID]
 }
 
 // nowWithOffset returns current time shifted by the channel's in-memory skipOffset.
@@ -193,6 +233,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			ChannelID:     channelID,
 			State:         "stopped",
 			SkipOffsetSec: s.skipOffsets[channelID],
+			Restarts:      s.restarts[channelID],
+			LastError:     s.lastErrors[channelID],
 		}
 		s.mu.Unlock()
 		s.publish(events.Event{
@@ -212,6 +254,7 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 
 	first := true         // first iteration of the outer loop
 	consecutiveFails := 0 // fast-fail counter for the idle fallback trigger
+	restartedInCycle := false
 
 	pollInterval := s.idlePollInterval
 	if pollInterval <= 0 {
@@ -228,6 +271,11 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			log.Printf("supervisor: channel %d inactive, stopping loop", channelID)
 			return
 		}
+
+		if !first && !restartedInCycle {
+			s.recordHealth(channelID, true, "")
+		}
+		restartedInCycle = false
 
 		item, err := s.calc.GetCurrentPlayout(channelID, s.nowWithOffset(channelID))
 		useIdle := false
@@ -285,6 +333,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			}
 			log.Printf("supervisor: channel %d start error: %v", channelID, err)
 			consecutiveFails++
+			s.recordHealth(channelID, true, err.Error())
+			restartedInCycle = true
 			// Brief backoff before retrying.
 			select {
 			case <-ctx.Done():
@@ -304,6 +354,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 				SourcePath:    s.idleClip,
 				StartedAt:     startedAt,
 				SkipOffsetSec: s.skipOffsets[channelID],
+				Restarts:      s.restarts[channelID],
+				LastError:     s.lastErrors[channelID],
 			}
 			s.mu.Unlock()
 			if prev.State != "idle" {
@@ -325,6 +377,8 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 				SeekSeconds:   item.SeekSeconds,
 				RemainingSec:  item.RemainingSec,
 				SkipOffsetSec: s.skipOffsets[channelID],
+				Restarts:      s.restarts[channelID],
+				LastError:     s.lastErrors[channelID],
 			}
 			s.mu.Unlock()
 			if prev.State != "playing" || prev.MediaID != item.MediaID {
@@ -380,11 +434,17 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 		} else if elapsed < 2*time.Second {
 			consecutiveFails++
 			tail := s.ctrl.StderrTail(channelID)
+			errMsg := strings.TrimSpace(tail)
+			if errMsg == "" {
+				errMsg = "fast exit"
+			}
 			if trimmed := strings.TrimSpace(tail); trimmed != "" {
 				log.Printf("supervisor: channel %d fast failure (elapsed %v): %s", channelID, elapsed, trimmed)
 			} else {
 				log.Printf("supervisor: channel %d fast failure (elapsed %v)", channelID, elapsed)
 			}
+			s.recordHealth(channelID, true, errMsg)
+			restartedInCycle = true
 		} else {
 			consecutiveFails = 0
 		}
@@ -474,11 +534,15 @@ func (s *Supervisor) Status(channelID int64) ChannelStatus {
 
 func (s *Supervisor) statusLocked(channelID int64) ChannelStatus {
 	offset := s.skipOffsets[channelID]
+	restarts := s.restarts[channelID]
+	lastErr := s.lastErrors[channelID]
 	if _, running := s.active[channelID]; !running {
 		return ChannelStatus{
 			ChannelID:     channelID,
 			State:         "stopped",
 			SkipOffsetSec: offset,
+			Restarts:      restarts,
+			LastError:     lastErr,
 		}
 	}
 
@@ -488,6 +552,8 @@ func (s *Supervisor) statusLocked(channelID int64) ChannelStatus {
 			ChannelID:     channelID,
 			State:         "stopped",
 			SkipOffsetSec: offset,
+			Restarts:      restarts,
+			LastError:     lastErr,
 		}
 	}
 
@@ -498,6 +564,8 @@ func (s *Supervisor) statusLocked(channelID int64) ChannelStatus {
 			SourcePath:    st.SourcePath,
 			StartedAt:     st.StartedAt,
 			SkipOffsetSec: offset,
+			Restarts:      restarts,
+			LastError:     lastErr,
 		}
 	}
 
@@ -523,6 +591,8 @@ func (s *Supervisor) statusLocked(channelID int64) ChannelStatus {
 		st.SourcePath = item.FilePath
 	}
 	st.SkipOffsetSec = offset
+	st.Restarts = restarts
+	st.LastError = lastErr
 	return st
 }
 

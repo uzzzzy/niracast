@@ -55,3 +55,32 @@ INSTEAD OF DELETE ON schedules
 BEGIN
     DELETE FROM playlist_items WHERE channel_id = OLD.channel_id;
 END;
+
+CREATE TABLE IF NOT EXISTS analytics_minute (
+    id INTEGER PRIMARY KEY,
+    bucket_at INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    media_id INTEGER NOT NULL DEFAULT 0,
+    viewers_peak INTEGER NOT NULL DEFAULT 0,
+    bytes_out INTEGER NOT NULL DEFAULT 0,
+    watch_sec REAL NOT NULL DEFAULT 0,
+    UNIQUE(bucket_at, channel_id, media_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_minute_bucket ON analytics_minute(bucket_at, channel_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_minute_media ON analytics_minute(media_id, bucket_at);
+
+CREATE TABLE IF NOT EXISTS analytics_daily (
+    id INTEGER PRIMARY KEY,
+    day_at INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    media_id INTEGER NOT NULL DEFAULT 0,
+    viewers_peak INTEGER NOT NULL DEFAULT 0,
+    bytes_out INTEGER NOT NULL DEFAULT 0,
+    watch_sec REAL NOT NULL DEFAULT 0,
+    UNIQUE(day_at, channel_id, media_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_daily_day ON analytics_daily(day_at, channel_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_daily_media ON analytics_daily(media_id, day_at);
+

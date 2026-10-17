@@ -109,7 +109,7 @@ func TestSupervisor_StatusTransitionsAndEvents(t *testing.T) {
 	evs := pub.all()
 	var types []string
 	for _, ev := range evs {
-		if ev.ChannelID == channelID {
+		if ev.ChannelID == channelID && ev.Type != "channel.health" {
 			types = append(types, ev.Type)
 		}
 	}

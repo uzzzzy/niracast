@@ -145,6 +145,45 @@ export interface ChannelStatus {
   state: 'stopped' | 'idle' | 'playing' | string;
   item: MediaItem | null;
   skip_offset_sec: number;
+  viewers?: number;
+  restarts?: number;
+  last_error?: string;
+}
+
+export type AnalyticsRange = '1h' | '24h' | '7d' | '30d';
+
+export interface LiveChannelStatus {
+  channel_id: number;
+  viewers: number;
+  restarts: number;
+  last_error: string;
+}
+
+export interface LiveAnalyticsResponse {
+  total_viewers: number;
+  channels: LiveChannelStatus[];
+}
+
+export interface TimeseriesPoint {
+  ts: string;
+  viewers_peak: number;
+  bytes_out: number;
+  watch_sec: number;
+}
+
+export interface TimeseriesResponse {
+  range: AnalyticsRange | string;
+  points: TimeseriesPoint[];
+}
+
+export interface TopMediaItem {
+  media_id: number;
+  title: string;
+  watch_sec: number;
+}
+
+export interface TopMediaResponse {
+  items: TopMediaItem[];
 }
 
 export interface AuthMe {
@@ -341,5 +380,19 @@ export const api = {
     }),
   getEpg: (id: number | string, count = 10) =>
     apiFetch<EpgResponse>(`/api/v1/channels/${id}/epg?count=${count}`),
+  getAnalyticsLive: () => apiFetch<LiveAnalyticsResponse>('/api/v1/analytics/live'),
+  getAnalyticsTimeseries: (range: AnalyticsRange = '24h', channelId?: number) => {
+    const params = new URLSearchParams();
+    if (range) params.set('range', range);
+    if (channelId && channelId > 0) params.set('channel_id', String(channelId));
+    const qs = params.toString();
+    return apiFetch<TimeseriesResponse>(`/api/v1/analytics/timeseries${qs ? `?${qs}` : ''}`);
+  },
+  getAnalyticsTopMedia: (range: AnalyticsRange = '24h') => {
+    const params = new URLSearchParams();
+    if (range) params.set('range', range);
+    const qs = params.toString();
+    return apiFetch<TopMediaResponse>(`/api/v1/analytics/top-media${qs ? `?${qs}` : ''}`);
+  },
   fetch: apiFetch,
 };

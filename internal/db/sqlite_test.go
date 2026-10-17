@@ -22,7 +22,7 @@ func TestInitDB(t *testing.T) {
 		t.Fatalf("user_version = %d, want 2", version)
 	}
 
-	for _, name := range []string{"channels", "media_files", "playlist_items", "schedule_slots"} {
+	for _, name := range []string{"channels", "media_files", "playlist_items", "schedule_slots", "analytics_minute", "analytics_daily"} {
 		var got string
 		err := conn.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name=?", name).Scan(&got)
 		if err != nil {

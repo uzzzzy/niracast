@@ -465,6 +465,14 @@ func TestEvents_SSE_SnapshotAndStream(t *testing.T) {
 		t.Errorf("snapshot data line = %q, want prefix 'data: '", line2)
 	}
 
+	var snap []channelStatusResponse
+	if err := json.Unmarshal([]byte(strings.TrimPrefix(line2, "data: ")), &snap); err != nil {
+		t.Fatalf("unmarshal snapshot data: %v", err)
+	}
+	if len(snap) != 1 || snap[0].ChannelID != 1 {
+		t.Errorf("unexpected snapshot: %+v", snap)
+	}
+
 	// Consume blank line separating SSE events
 	_, _ = reader.ReadString('\n')
 

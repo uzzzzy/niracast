@@ -6,6 +6,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { AdminShell } from '../features/admin/components/AdminShell';
 import { AmbientBackground } from '../features/admin/components/AmbientBackground';
 import { LoginCard } from '../features/admin/components/LoginCard';
+import { AnalyticsPage } from '../features/admin/pages/AnalyticsPage';
 import { ChannelsPage } from '../features/admin/pages/ChannelsPage';
 import { MediaPage } from '../features/admin/pages/MediaPage';
 import { OverviewPage } from '../features/admin/pages/OverviewPage';
@@ -115,6 +116,7 @@ export default function AdminPage() {
             <Route path="channels" element={<ChannelsPage />} />
             <Route path="channels/:id/schedule" element={<SchedulePage />} />
             <Route path="channels/:id" element={<PlaylistEditorPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="media" element={<MediaPage />} />
             <Route path="system" element={<SystemPage />} />
             <Route path="*" element={<Navigate to="/admin/overview" replace />} />
