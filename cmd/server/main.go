@@ -12,6 +12,7 @@ import (
 	"tv-stream/internal/api"
 	"tv-stream/internal/auth"
 	"tv-stream/internal/db"
+	"tv-stream/internal/events"
 	"tv-stream/internal/feed"
 	"tv-stream/internal/stream"
 	"tv-stream/internal/timeline"
@@ -72,6 +73,9 @@ func main() {
 		transcodeDir+"/channels",
 	)
 
+	hub := events.NewHub()
+	supervisor.SetPublisher(hub)
+
 	hls := &hlsHandler{
 		ctx:        ctx,
 		db:         conn,
@@ -81,6 +85,8 @@ func main() {
 		supervisor: supervisor,
 		root:       transcodeDir + "/channels",
 	}
+
+	statusH := newStatusHandler(conn, supervisor, hub)
 
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
@@ -106,6 +112,7 @@ func main() {
 	api.NewChannelHandler(conn).Register(mux)
 	feed.NewHandler(conn).Register(mux)
 	authHandler.Register(mux)
+	statusH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))

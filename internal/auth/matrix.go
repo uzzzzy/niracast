@@ -29,6 +29,7 @@ type AccessRule struct {
 // | /api/v1/channels (mutations)     | POST                | PROTECTED | Create channel                    |
 // | /api/v1/channels/{id} (mutations)| PUT, DELETE         | PROTECTED | Update/delete channel             |
 // | /api/v1/channels/{id}/playlist   | POST                | PROTECTED | Set playlist                      |
+// | /api/v1/channels/{id}/skip       | POST                | PROTECTED | Skip current item (phase 2b)      |
 // | /api/v1/media                    | GET, HEAD           | PROTECTED | Media library listing             |
 // | /api/v1/events                   | GET                 | PROTECTED | SSE event stream                  |
 // | (all other /api/v1/*)            | ANY                 | PROTECTED | Default deny for API mutations    |
@@ -44,6 +45,7 @@ var AccessMatrix = []AccessRule{
 	{Pattern: "/api/v1/channels", Methods: []string{"POST"}, Protected: true, Comment: "Create channel"},
 	{Pattern: "/api/v1/channels/{id}", Methods: []string{"PUT", "DELETE"}, Protected: true, Comment: "Update / delete channel"},
 	{Pattern: "/api/v1/channels/{id}/playlist", Methods: []string{"POST"}, Protected: true, Comment: "Set channel playlist"},
+	{Pattern: "/api/v1/channels/{id}/skip", Methods: []string{"POST"}, Protected: true, Comment: "Skip current playing item"},
 	{Pattern: "/api/v1/media", Methods: []string{"GET"}, Protected: true, Comment: "Media index"},
 	{Pattern: "/api/v1/events", Methods: []string{"GET"}, Protected: true, Comment: "SSE events"},
 }
