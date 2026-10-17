@@ -1,0 +1,22 @@
+# Project Overview
+
+- **Goal**: 24/7 TV broadcast stream app ("mulai otomatis" — continuous automated broadcast).
+- **Stack**:
+  - Go 1.27 (`tv-stream` module)
+  - `modernc.org/sqlite` (pure Go, `CGO_ENABLED=0`)
+  - FFmpeg / ffprobe
+  - `hls.js` + vanilla JS dashboard
+  - Docker & Docker Compose
+- **Execution**:
+  - Run: `docker compose up -d --build`
+  - Web Dashboard: `http://localhost:8080`
+- **Environment Variables**:
+  - `ADDR`: Server listen address (default `:8080`)
+  - `DB_PATH`: SQLite database file path (default `/data/tv-stream.db`)
+  - `MEDIA_DIR`: Media directory (default `/media`)
+  - `TRANSCODE_DIR`: Temporary HLS transcode directory (default `/transcode`)
+  - `STATIC_DIR`: Frontend static files directory (default `web/static`)
+  - `FFMPEG_PATH`: Path to ffmpeg binary (optional override)
+- **Tests**:
+  - `go test ./...`
+  - `go vet ./...`
