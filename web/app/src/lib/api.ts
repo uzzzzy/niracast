@@ -14,6 +14,57 @@ export interface MediaItem {
   remaining_sec: number;
 }
 
+export interface PlaylistItem {
+  media_id: number;
+  position: number;
+  filename: string;
+  duration_sec: number;
+}
+
+export interface PlaylistResponse {
+  channel_id: number;
+  items: PlaylistItem[];
+  total_duration_sec: number;
+}
+
+export interface MediaFile {
+  id: number;
+  path: string;
+  filename: string;
+  duration_sec: number;
+  codec_video: string;
+  codec_audio: string;
+  width: number;
+  height: number;
+}
+
+export interface RescanResponse {
+  status: 'started' | 'already_running';
+}
+
+export interface ScanStatus {
+  running: boolean;
+  last_started_at: string | null;
+  last_finished_at: string | null;
+  last_error: string | null;
+}
+
+export interface SystemInfo {
+  uptime_sec: number;
+  media_count: number;
+  channel_count: number;
+  running_channels: number;
+  ffmpeg: {
+    path: string;
+    version: string;
+  };
+  idle_clip: {
+    ready: boolean;
+    size_bytes: number;
+    modified_at: string;
+  };
+}
+
 export interface EpgItem {
   media_id: number;
   title: string;
@@ -32,7 +83,7 @@ export interface EpgResponse {
 
 export interface ChannelStatus {
   channel_id: number;
-  state: string;
+  state: 'stopped' | 'idle' | 'playing' | string;
   item: MediaItem | null;
   skip_offset_sec: number;
 }
@@ -40,6 +91,34 @@ export interface ChannelStatus {
 export interface AuthMe {
   authenticated: boolean;
   csrf: string;
+}
+
+export class ApiError extends Error {
+  status: number;
+  retryAfter?: number;
+
+  constructor(message: string, status: number, retryAfter?: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
+type UnauthorizedHandler = () => void;
+const unauthorizedHandlers: Set<UnauthorizedHandler> = new Set();
+
+export function onUnauthorized(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandlers.add(handler);
+  return () => {
+    unauthorizedHandlers.delete(handler);
+  };
+}
+
+export function notifyUnauthorized(): void {
+  for (const handler of unauthorizedHandlers) {
+    handler();
+  }
 }
 
 let csrfToken = '';
@@ -85,19 +164,49 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
     } catch {
       // non-JSON error body
     }
-    throw new Error(message);
+
+    const retryHeader = response.headers.get('Retry-After');
+    const retryAfter = retryHeader ? Number.parseInt(retryHeader, 10) : undefined;
+
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
+
+    throw new ApiError(message, response.status, retryAfter);
+  }
+
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  if (typeof response.text === 'function') {
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+    return JSON.parse(text) as T;
   }
 
   return response.json();
 }
 
 export const api = {
-  getChannels: () => apiFetch<Channel[]>('/api/v1/channels'),
-  getChannel: (id: number | string) => apiFetch<Channel>(`/api/v1/channels/${id}`),
-  getChannelStatus: (id: number | string) =>
-    apiFetch<ChannelStatus>(`/api/v1/channels/${id}/status`),
-  getEpg: (id: number | string, count = 10) =>
-    apiFetch<EpgResponse>(`/api/v1/channels/${id}/epg?count=${count}`),
+  login: async (password: string) => {
+    const data = await apiFetch<{ csrf: string }>('/api/v1/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+    if (data.csrf) {
+      setCsrfToken(data.csrf);
+    }
+    return data;
+  },
+  logout: async () => {
+    await apiFetch<{ success?: boolean }>('/api/v1/auth/logout', {
+      method: 'POST',
+    });
+    setCsrfToken('');
+  },
   getAuthMe: async () => {
     const data = await apiFetch<AuthMe>('/api/v1/auth/me');
     if (data.csrf) {
@@ -105,5 +214,43 @@ export const api = {
     }
     return data;
   },
+  getChannels: () => apiFetch<Channel[]>('/api/v1/channels'),
+  getChannel: (id: number | string) => apiFetch<Channel>(`/api/v1/channels/${id}`),
+  createChannel: (data: { number: number; name: string }) =>
+    apiFetch<Channel>('/api/v1/channels', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateChannel: (id: number | string, data: { number: number; name: string }) =>
+    apiFetch<Channel>(`/api/v1/channels/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteChannel: (id: number | string) =>
+    apiFetch<void>(`/api/v1/channels/${id}`, {
+      method: 'DELETE',
+    }),
+  getChannelPlaylist: (id: number | string) =>
+    apiFetch<PlaylistResponse>(`/api/v1/channels/${id}/playlist`),
+  setChannelPlaylist: (id: number | string, media_ids: number[]) =>
+    apiFetch<PlaylistResponse>(`/api/v1/channels/${id}/playlist`, {
+      method: 'POST',
+      body: JSON.stringify({ media_ids }),
+    }),
+  getMedia: () => apiFetch<MediaFile[]>('/api/v1/media'),
+  rescanMedia: () =>
+    apiFetch<RescanResponse>('/api/v1/media/rescan', {
+      method: 'POST',
+    }),
+  getMediaScanStatus: () => apiFetch<ScanStatus>('/api/v1/media/scan-status'),
+  getSystemInfo: () => apiFetch<SystemInfo>('/api/v1/system'),
+  getChannelStatus: (id: number | string) =>
+    apiFetch<ChannelStatus>(`/api/v1/channels/${id}/status`),
+  skipChannel: (id: number | string) =>
+    apiFetch<ChannelStatus>(`/api/v1/channels/${id}/skip`, {
+      method: 'POST',
+    }),
+  getEpg: (id: number | string, count = 10) =>
+    apiFetch<EpgResponse>(`/api/v1/channels/${id}/epg?count=${count}`),
   fetch: apiFetch,
 };

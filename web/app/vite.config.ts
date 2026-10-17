@@ -18,7 +18,12 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('AdminPage')) {
+          if (
+            id.includes('AdminPage') ||
+            id.includes('features/admin') ||
+            id.includes('node_modules/@dnd-kit') ||
+            id.includes('node_modules/sonner')
+          ) {
             return 'admin';
           }
           if (id.includes('ViewerPage') || id.includes('features/viewer')) {
