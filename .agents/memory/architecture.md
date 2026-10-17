@@ -18,8 +18,26 @@
   - `SessionManager`: Session lifecycle with idle reaper (60s default timeout, 10s tick).
   - `OptimizePipeline`: Stream optimization detecting codecs (h264 + aac copied directly, others transcoded).
   - HLS generation flags: `-hls_time 2 -hls_list_size 5 -hls_flags delete_segments+append_list+omit_endlist` (and `discont_start` on stream roll/continuity boundaries).
+- **`internal/auth`**: Authentication and session management (HMAC-signed HttpOnly session cookie `tvs_session` 12h, CSRF double-submit header `X-CSRF-Token`, login rate limit 5/min per `RemoteAddr` via `golang.org/x/time/rate`, route access matrix in `internal/auth/matrix.go`).
+- **`internal/events`**: Non-blocking pub/sub hub for real-time broadcast and event dispatch.
 - **`internal/feed`**: IPTV feeds serving `GET /iptv/channels.m3u` and `GET /iptv/epg.xml`.
 - **`web/static`**: Frontend assets (`index.html`, `app.js`, `style.css`, `player.html`, `player.js`).
+
+## Key API Routes
+
+- **Authentication**:
+  - `POST /api/v1/auth/login`: Authenticate and issue session cookie with CSRF token.
+  - `POST /api/v1/auth/logout`: Terminate session and clear cookie.
+  - `GET /api/v1/auth/me`: Check current session authentication status.
+- **Playout & Events**:
+  - `GET /api/v1/events`: Real-time Server-Sent Events (SSE, protected).
+  - `GET /api/v1/channels/{id}/status`: Channel playout status (public).
+  - `POST /api/v1/channels/{id}/skip`: Skip current item and advance playout (protected).
+
+## Environment Variables
+
+- `ADMIN_PASSWORD`: Admin password for authentication (empty = random password generated and logged once on startup).
+- `SESSION_SECRET`: HMAC key for signing session cookies (empty = random per process, sessions reset on restart).
 
 ## Docker Setup
 

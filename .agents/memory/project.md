@@ -17,6 +17,8 @@
   - `TRANSCODE_DIR`: Temporary HLS transcode directory (default `/transcode`)
   - `STATIC_DIR`: Frontend static files directory (default `web/static`)
   - `FFMPEG_PATH`: Path to ffmpeg binary (optional override)
+  - `ADMIN_PASSWORD`: Admin login password (empty = random password logged once on startup)
+  - `SESSION_SECRET`: Secret key for HMAC cookie signing (empty = random per process)
 - **Tests**:
   - `go test ./...`
   - `go vet ./...`

@@ -18,4 +18,10 @@
   - Explicit stream mapping: `-map 0:v:0 -map 0:a:0? -sn -dn` is strictly used because real MKV containers frequently carry ASS subtitles and font attachments that break HLS muxing.
   - Idle clip 2s keyframes: Idle clip pre-encoding forces keyframes every 2s so the initial HLS manifest appears in ~2s.
   - Zero-CPU idle looping: Idle channels are copy-looped (`-stream_loop -1 -re -c copy`), consuming ~0 CPU overhead.
+- **Phase 2 Auth & Playout Decisions**:
+  - In-memory skip offset: Playout skip offset is held in-memory only and shifts the supervisor timeline; EPG and M3U feeds continue to compute from wall clock, so their schedule metadata can differ from actual playout after a skip.
+  - Direct RemoteAddr rate limiting: The login rate limiter strictly inspects `r.RemoteAddr` and does not trust `X-Forwarded-For` to prevent unauthenticated header spoofing without explicit proxy configuration.
+  - Temporary vanilla dashboard auth: Added a minimal login modal to the legacy vanilla dashboard to support authenticated operations until Phase 5 replaces the UI.
+  - Repository-wide LF enforcement: Added `.gitattributes` forcing LF endings repository-wide because `core.autocrlf=true` generated CRLF line breaks that broke `gofmt -l` checks during pre-commit.
+
 

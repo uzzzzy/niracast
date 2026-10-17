@@ -17,6 +17,10 @@ go test ./...                  # Run all unit and integration tests
 go vet ./...                   # Run code vetting and static checks
 ```
 
+## Environment Variables
+- `ADMIN_PASSWORD`: Admin authentication password (empty = random password logged once on startup).
+- `SESSION_SECRET`: Secret key for HMAC cookie signing (empty = random per process, sessions reset on restart).
+
 ## Git Flow
 This repository follows Git Flow (`main`, `develop`, `feature/*`, `fix/*`, `release/*`, `hotfix/*`). See [docs/GIT_FLOW.md](docs/GIT_FLOW.md).
 Run `git config core.hooksPath .githooks` after cloning to activate pre-commit quality gates.

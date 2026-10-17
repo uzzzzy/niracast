@@ -54,7 +54,7 @@
 | Phase | Branch | Scope Summary | Done Criterion |
 |---|---|---|---|
 | 1 | `feature/playout-supervisor-idle` | Playout supervisor auto-advancing playlist items, pre-encoded idle video generator, and copy-loop fallback on empty channels. | **DONE**: Playout rolls seamlessly across items and falls back to low-CPU idle card without 404s (~2% CPU, ~32MiB). |
-| 2 | `feature/admin-auth` | Admin env password verification, HTTP-only cookie sessions, CSRF protection, SSE event stream (`/api/v1/events`), and channel status/skip APIs. | Unauthenticated CMS mutations are rejected and playout events stream live over SSE. |
+| 2 | `feature/admin-auth` | Admin env password verification, HTTP-only cookie sessions, CSRF protection, SSE event stream (`/api/v1/events`), and channel status/skip APIs. | **DONE**: Admin auth, CSRF, and rate limiting protect CMS APIs; status inspection and live SSE events operational. |
 | 3 | `feature/frontend-scaffold` | React 19 + Vite setup in `web/`, Dockerfile Node build stage, binary embedding via `go:embed`, and SPA fallback routing. | Go server serves the compiled React single-page app on root and unknown routes from a single container. |
 | 4 | `feature/viewer-page` | Dedicated viewer (`/watch/{id}`) with custom `hls.js` hook (exponential backoff), glass HUD, channel switcher, and Now/Next EPG. | Desktop browser plays channel HLS stream with operational glass HUD overlay and channel selector. |
 | 5 | `feature/cms-studio` | CMS dashboard: media file library viewer, drag-and-drop playlist reordering, visual schedule planner, and live status monitor. | Operator can reorder channel playlist via drag-and-drop and skip currently playing track via UI. |
