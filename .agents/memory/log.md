@@ -27,5 +27,6 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Playout inspection and skip: Added `GET /api/v1/channels/{id}/status` (public) and manual item skip `POST /api/v1/channels/{id}/skip` (protected, shifts supervisor timeline).
   - Legacy dashboard update: Added temporary login modal and session handling to vanilla UI until Phase 5.
   - Verified: Unit tests, route matrix, and E2E HTTP integration tests passed; live `curl` test validated login/logout, CSRF rejection, 429 rate limiting, protected CMS gate, real-time SSE event reception, JSON status inspection, and timeline skip; Docker container run validated with zero regressions.
+- **Future Plan Formalized**: Documented unscheduled roadmap proposals in `docs/ROADMAP.md` covering scheduled TV-style broadcast programming (F1) and real-time HLS viewer analytics (F2). Updated architectural decisions and known gaps.
 
 

@@ -23,5 +23,6 @@
   - Direct RemoteAddr rate limiting: The login rate limiter strictly inspects `r.RemoteAddr` and does not trust `X-Forwarded-For` to prevent unauthenticated header spoofing without explicit proxy configuration.
   - Temporary vanilla dashboard auth: Added a minimal login modal to the legacy vanilla dashboard to support authenticated operations until Phase 5 replaces the UI.
   - Repository-wide LF enforcement: Added `.gitattributes` forcing LF endings repository-wide because `core.autocrlf=true` generated CRLF line breaks that broke `gofmt -l` checks during pre-commit.
+- **2026-10-17**: Future plan recorded: scheduled broadcast (F1) and realtime analytics (F2), not scheduled yet; see docs/ROADMAP.md.
 
 

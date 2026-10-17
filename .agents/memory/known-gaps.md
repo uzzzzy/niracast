@@ -9,4 +9,6 @@
 - **SSE Browser Verification**: Server-Sent Events (`GET /api/v1/events`) have only been verified with `curl` and `httptest`, not yet within a real browser `EventSource` client.
 - **Database Migrations**: No migration runner needed yet as Phase 2 introduced no database schema changes.
 - **First Manifest Wait in Copy Mode**: First manifest generation wait equals the source GOP length for copy mode (`sample.mp4` with 10s keyframes took ~9s, while real movies take 2.5–5s).
+- **No Clock-Time Scheduling**: Channels currently loop playlists via wall-clock modulo without fixed-time calendar slot resolution or idle-slate gap filling. Target: Future Plan F1 (`docs/ROADMAP.md`).
+- **No Playout Analytics**: No concurrent viewer estimation, outbound bandwidth tracking, or historical audience metrics. Target: Future Plan F2 (`docs/ROADMAP.md`).
 
