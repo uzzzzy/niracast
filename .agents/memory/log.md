@@ -19,4 +19,9 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - FFmpeg flag fixes: `discont_start`, permanent `omit_endlist`, and `-map 0:v:0 -map 0:a:0? -sn -dn` stream isolation.
   - Verified: E2E with real movies in `sample/` via copy mode; MKV with embedded subtitles fixed; idle->real switch with discontinuity; Docker container ~2% CPU and ~32MiB with 2 channels; manifest first byte ~2s idle / ~3.5s playlist.
   - Unverified: Safari/Smart-TV behaviour across discontinuities; tiny-remaining-time edge case when an item resolves with <1s left may restart the same file.
+- **Phase 2 Admin Auth & Git Housekeeping** (`feature/admin-auth`):
+  - Created `.gitattributes` enforcing LF line endings repository-wide and binary for media assets, eliminating `gofmt -l` CRLF discrepancies.
+  - Implemented admin authentication system (`internal/auth`): HMAC-SHA256 signed cookie sessions, CSRF token validation (`X-CSRF-Token`), IP-based rate limiting (5 attempts/min), and protected CMS API endpoints.
+  - Updated frontend with login/logout modals and automatic session renewal/prompting.
+  - Added comprehensive test suites: unit, route matrix, and end-to-end HTTP integration tests.
 

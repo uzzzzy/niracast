@@ -10,6 +10,8 @@ services:
       DB_PATH: /data/tv-stream.db
       MEDIA_DIR: /media
       TRANSCODE_DIR: /transcode
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
     volumes:
       - ${MEDIA_PATH:-./media}:/media:ro
       - ./data:/data
