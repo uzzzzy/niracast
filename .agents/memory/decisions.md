@@ -26,7 +26,10 @@
 - **Phase 3 Frontend Scaffold Decisions**:
   - Exact version pins: Configured `.npmrc` with `save-exact=true` and enforced `packageManager` in `package.json` (`pnpm@10.5.2`) for reproducible and deterministic dependency lockfiles.
   - Vite outDir is dist/app: Vite build output is isolated to `web/app/dist/app` so that the tracked placeholder `web/app/dist/.gitkeep` survives Vite's `emptyOutDir`. A clean git clone can immediately run `go build` out of the box without Node installed (bug found and fixed).
-  - Deferred dependencies: Deferred UI/player dependencies (`motion`, `radix-ui`, `hls.js`, `@dnd-kit`, `sonner`) until their dedicated roadmap phases to maintain a lean scaffold.
+- **Phase 4 Viewer Page Decisions**:
+  - Exact `hls.js` 1.7.3 pinned and isolated into a dedicated manual vendor chunk (`hls`) in `vite.config.ts` to prevent bloating the main app bundle.
+  - Real browser mount timing bug: When `ViewerPage` loads, the video element is only mounted after the asynchronous channel query completes. An initial hook effect using a standard `useRef` ran once when the ref was still `null`, leaving playback uninitialized. Fixed by holding the video element in React state (`videoEl`) so the player effect triggers immediately when the DOM node attaches, backed by a regression test.
+  - Verification lesson: Unit tests using a mocked `hls.js` missed the lifecycle timing mismatch entirely because the mock executed synchronously against synthetic DOM nodes; always perform real-browser playback checks.
 - **2026-10-17**: Future plan recorded: scheduled broadcast (F1) and realtime analytics (F2), not scheduled yet; see docs/ROADMAP.md.
 
 

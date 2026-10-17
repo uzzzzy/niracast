@@ -270,6 +270,9 @@ func TestAccessMatrix(t *testing.T) {
 		{"Channels list OPTIONS", http.MethodOptions, "/api/v1/channels", true},
 		{"Channel detail GET", http.MethodGet, "/api/v1/channels/123", true},
 		{"Channel status GET", http.MethodGet, "/api/v1/channels/123/status", true},
+		{"Channel EPG GET", http.MethodGet, "/api/v1/channels/123/epg", true},
+		{"Channel EPG HEAD", http.MethodHead, "/api/v1/channels/123/epg", true},
+		{"Channel EPG OPTIONS", http.MethodOptions, "/api/v1/channels/123/epg", true},
 
 		// Protected API
 		{"Create channel POST", http.MethodPost, "/api/v1/channels", false},
@@ -280,6 +283,7 @@ func TestAccessMatrix(t *testing.T) {
 		{"Events stream GET", http.MethodGet, "/api/v1/events", false},
 		{"Logout POST", http.MethodPost, "/api/v1/auth/logout", false},
 		{"Channel status POST", http.MethodPost, "/api/v1/channels/123/status", false},
+		{"Channel EPG POST", http.MethodPost, "/api/v1/channels/123/epg", false},
 		{"Unknown API route GET", http.MethodGet, "/api/v1/unknown", false},
 	}
 

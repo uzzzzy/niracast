@@ -9,8 +9,12 @@
   --accent: #0a84ff;
   --live: #30d158;
   --danger: #ff453a;
-  --border: rgba(255, 255, 255, 0.1);
-  --font-system: -apple-system, "SF Pro Text", Inter, system-ui, sans-serif;
+  --border: rgba(255, 255, 255, 0.12);
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, system-ui, sans-serif;
+  --dur-fast: 120ms;
+  --dur-normal: 240ms;
+  --dur-slow: 350ms;
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
@@ -22,13 +26,48 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@keyframes live-dot-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+}
+
+.animate-live-pulse {
+  animation: live-dot-pulse 2s infinite ease-in-out;
+}
+
+.transition-spring {
+  transition-property: transform, opacity;
+  transition-timing-function: var(--ease-spring);
+  transition-duration: var(--dur-normal);
+}
+
+.transition-hud {
+  transition-property: opacity;
+  transition-timing-function: var(--ease-spring);
+  transition-duration: var(--dur-slow);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
   ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+    transition-duration: 100ms !important;
+  }
+  .animate-live-pulse {
+    animation: none !important;
+  }
+  .reduced-motion-fade {
+    transform: none !important;
+    transition-property: opacity !important;
+    transition-duration: 100ms !important;
   }
 }

@@ -36,7 +36,10 @@ describe('App routing', () => {
     expect(await screen.findByText('No Channels Available')).toBeInTheDocument();
   });
 
-  it('renders viewer page placeholder with channel name and state', async () => {
+  it('renders viewer page with channel name and now playing item', async () => {
+    vi.spyOn(apiModule.api, 'getChannels').mockResolvedValue([
+      { id: 1, number: 101, name: 'Retro Cinema', created_at: '2026-01-01T00:00:00Z' },
+    ]);
     vi.spyOn(apiModule.api, 'getChannel').mockResolvedValue({
       id: 1,
       number: 101,
@@ -56,13 +59,18 @@ describe('App routing', () => {
       },
       skip_offset_sec: 0,
     });
+    vi.spyOn(apiModule.api, 'getEpg').mockResolvedValue({
+      channel_id: 1,
+      generated_at: '2026-01-01T00:00:00Z',
+      idle: false,
+      items: [],
+    });
 
     renderWithProviders('/watch/1');
 
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'Retro Cinema' }),
+      await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('playing').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('classic_movie.mp4')).toBeInTheDocument();
   });
 
