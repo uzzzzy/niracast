@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Stream Player</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+#player-wrap{max-width:960px;margin:1rem auto;padding:0 1rem}
+#video{width:100%;background:#000;aspect-ratio:16/9}
+#player-status{margin:.5rem 0;min-height:1.5em}
+#player-status.error{color:#c0392b}
+</style>
+</head>
+<body>
+<header class="bar">
+  <h1>TV Stream Player</h1>
+  <div class="actions"><a class="btn" href="/static/index.html">Dashboard</a></div>
+</header>
+<main id="player-wrap">
+  <h2 id="player-title">Channel</h2>
+  <video id="video" controls muted autoplay playsinline></video>
+  <p id="player-status" role="status"></p>
+  <button id="retry" class="btn" hidden>Retry</button>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script src="/static/player.js"></script>
+</body>
+</html>

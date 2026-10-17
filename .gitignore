@@ -1,0 +1,30 @@
+# Media and runtime data
+/media/
+/data/
+/transcode/
+
+# Database files
+*.db
+*.db-wal
+*.db-shm
+
+# Binaries and executables
+*.exe
+
+# Environment configuration
+.env
+!.env.example
+
+# Planning docs (explicitly tracked)
+!.agents/
+
+# IDE directories
+.idea/
+.vscode/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+._*

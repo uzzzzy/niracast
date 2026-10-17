@@ -1,0 +1,19 @@
+services:
+  tv-stream:
+    build: .
+    image: tv-stream:latest
+    container_name: tv-stream
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      DB_PATH: /data/tv-stream.db
+      MEDIA_DIR: /media
+      TRANSCODE_DIR: /transcode
+    volumes:
+      - ${MEDIA_PATH:-./media}:/media:ro
+      - ./data:/data
+    tmpfs:
+      # RAM disk for HLS segments: avoids constant SSD writes.
+      # uid/gid match the non-root "app" user in the image.
+      - /transcode:rw,size=1g,uid=100,gid=101

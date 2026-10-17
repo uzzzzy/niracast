@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Stream Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <h1>TV Stream</h1>
+  <div class="actions">
+    <button id="copy-m3u" class="btn">Copy M3U URL</button>
+    <button id="add-btn" class="btn primary">+ Add channel</button>
+  </div>
+</header>
+<main>
+  <p id="msg" class="msg" role="status"></p>
+  <table id="channels">
+    <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <p id="empty" class="empty" hidden>No channels yet.</p>
+</main>
+
+<dialog id="modal">
+  <form id="form" method="dialog">
+    <h2>Add channel</h2>
+    <label>Number <input name="number" type="number" min="1" required></label>
+    <label>Name <input name="name" type="text" required></label>
+    <label>Media to map (optional)
+      <select name="media" multiple size="6" id="media"></select>
+    </label>
+    <small id="media-hint">Select media to map into the channel playlist.</small>
+    <div class="actions">
+      <button type="button" id="cancel" class="btn">Cancel</button>
+      <button type="submit" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+<script src="/static/app.js"></script>
+</body>
+</html>
