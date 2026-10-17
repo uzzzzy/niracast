@@ -41,5 +41,6 @@ export function HomePage() {
     );
   }
 
-  return <Navigate to={`/watch/${channels[0].id}`} replace />;
+  const sortedChannels = [...channels].sort((a, b) => a.number - b.number);
+  return <Navigate to={`/watch/${sortedChannels[0].id}`} replace />;
 }

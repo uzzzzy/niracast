@@ -14,6 +14,22 @@ export interface MediaItem {
   remaining_sec: number;
 }
 
+export interface EpgItem {
+  media_id: number;
+  title: string;
+  start_at: string;
+  end_at: string;
+  duration_sec: number;
+  is_current: boolean;
+}
+
+export interface EpgResponse {
+  channel_id: number;
+  generated_at: string;
+  idle: boolean;
+  items: EpgItem[];
+}
+
 export interface ChannelStatus {
   channel_id: number;
   state: string;
@@ -80,6 +96,8 @@ export const api = {
   getChannel: (id: number | string) => apiFetch<Channel>(`/api/v1/channels/${id}`),
   getChannelStatus: (id: number | string) =>
     apiFetch<ChannelStatus>(`/api/v1/channels/${id}/status`),
+  getEpg: (id: number | string, count = 10) =>
+    apiFetch<EpgResponse>(`/api/v1/channels/${id}/epg?count=${count}`),
   getAuthMe: async () => {
     const data = await apiFetch<AuthMe>('/api/v1/auth/me');
     if (data.csrf) {

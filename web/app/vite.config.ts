@@ -21,8 +21,11 @@ export default defineConfig({
           if (id.includes('AdminPage')) {
             return 'admin';
           }
-          if (id.includes('ViewerPage')) {
+          if (id.includes('ViewerPage') || id.includes('features/viewer')) {
             return 'viewer';
+          }
+          if (id.includes('node_modules/hls.js')) {
+            return 'hls';
           }
         },
       },
