@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit3, ListMusic, Loader2, Plus, Trash2, Tv } from 'lucide-react';
+import { Edit3, ListMusic, Loader2, Plus, Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import emptyChannels from '../../../assets/empty-channels.webp';
+import { Button, Card, EmptyState } from '../../../components/ui';
 import { api, type Channel } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 import { DURATION, EASE } from '../../../lib/motion/tokens';
@@ -152,71 +154,68 @@ export function ChannelsPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[#F5F5F7]">{t('channels_title')}</h2>
-          <p className="mt-1 text-xs text-neutral-400">{t('channels_subtitle')}</p>
+          <h2 className="title text-xl font-bold tracking-tight text-fg">{t('channels_title')}</h2>
+          <p className="mt-1 text-xs text-fg-muted">{t('channels_subtitle')}</p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          aria-label={t('create_channel')}
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[#0A84FF] px-4 py-2.5 text-xs font-semibold text-white shadow-lg transition-all hover:bg-[#0071E3] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-        >
-          <Plus className="h-4 w-4" />
+        <Button variant="primary" onClick={handleOpenCreate} aria-label={t('create_channel')}>
+          <Plus className="h-4 w-4 mr-1.5" />
           <span>{t('create_channel')}</span>
-        </button>
+        </Button>
       </div>
 
       {/* Content */}
       {isLoading ? (
-        <div className="flex min-h-[250px] items-center justify-center text-neutral-400">
-          <Loader2 className="h-6 w-6 animate-spin text-[#0A84FF]" />
+        <div className="flex min-h-[250px] items-center justify-center text-fg-muted">
+          <Loader2 className="h-6 w-6 animate-spin text-accent" />
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-400">
+        <div className="rounded-tile border border-danger/30 bg-danger/10 p-6 text-center text-danger">
           <p className="text-sm">{error.message}</p>
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => refetch()}
-            className="mt-3 inline-flex min-h-[44px] items-center rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white hover:bg-white/15"
+            className="mt-3"
           >
             {t('retry')}
-          </button>
+          </Button>
         </div>
       ) : (channels?.length ?? 0) === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#16161B] p-12 text-center">
-          <Tv className="mx-auto h-12 w-12 text-neutral-600 mb-3" />
-          <h3 className="text-base font-semibold text-[#F5F5F7]">{t('no_channels')}</h3>
-          <p className="mt-1 text-xs text-neutral-400 max-w-sm mx-auto">{t('no_channels_desc')}</p>
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[#0A84FF] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#0071E3]"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('create_channel')}</span>
-          </button>
-        </div>
+        <Card className="p-8">
+          <EmptyState
+            art={emptyChannels}
+            title={t('no_channels')}
+            description={t('no_channels_desc')}
+            action={
+              <Button variant="primary" onClick={handleOpenCreate}>
+                <Plus className="h-4 w-4 mr-1.5" />
+                <span>{t('create_channel')}</span>
+              </Button>
+            }
+          />
+        </Card>
       ) : (
-        <div className="overflow-hidden md:rounded-2xl md:border md:border-white/10 md:bg-[#16161B] md:shadow-lg">
+        <Card className="overflow-hidden p-0">
           <div className="w-full">
-            <table className="w-full text-left text-sm text-[#F5F5F7] block md:table">
-              <thead className="hidden md:table-header-group border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+            <table className="w-full text-left text-sm text-fg block md:table">
+              <thead className="hidden md:table-header-group border-b border-hairline bg-surface-2 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
                 <tr>
-                  <th scope="col" className="px-6 py-3.5 w-24">
+                  <th scope="col" className="px-5 py-3 w-28">
                     {t('channel_number')}
                   </th>
-                  <th scope="col" className="px-6 py-3.5">
+                  <th scope="col" className="px-5 py-3">
                     {t('channel_name')}
                   </th>
-                  <th scope="col" className="px-6 py-3.5 hidden md:table-cell">
+                  <th scope="col" className="px-5 py-3 hidden md:table-cell">
                     {t('created_at')}
                   </th>
-                  <th scope="col" className="px-6 py-3.5 text-right">
+                  <th scope="col" className="px-5 py-3 text-right">
                     {t('actions')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 block md:table-row-group space-y-3 md:space-y-0">
+              <tbody className="divide-y divide-hairline block md:table-row-group">
                 <AnimatePresence>
                   {channels?.map((channel) => (
                     <motion.tr
@@ -226,57 +225,58 @@ export function ChannelsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.98 }}
                       transition={{ duration: DURATION.normal, ease: EASE.spring }}
-                      className="block md:table-row rounded-2xl border border-white/10 bg-[#16161B] md:border-0 md:bg-transparent p-4 md:p-0 shadow-sm md:shadow-none hover:bg-white/[0.02] transition-colors"
+                      className="block md:table-row rounded-tile hover:bg-surface-3/50 transition-colors p-4 md:p-0 my-1 md:my-0"
                     >
-                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 font-mono font-bold text-neutral-300">
-                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-xs text-[#0A84FF] md:bg-transparent md:text-neutral-300 md:h-auto md:w-auto">
+                      <td className="block md:table-cell px-0 py-1 md:px-5 md:py-3.5">
+                        <span className="timecode font-bold text-xs px-2.5 py-1 rounded-control bg-surface-2 border border-hairline text-accent inline-block">
                           #{channel.number}
                         </span>
                       </td>
-                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 font-medium text-white">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold md:font-medium">
-                            {channel.name}
-                          </span>
-                        </div>
+                      <td className="block md:table-cell px-0 py-1 md:px-5 md:py-3.5 font-medium text-fg">
+                        <span className="text-sm font-semibold md:font-medium">{channel.name}</span>
                       </td>
-                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 text-xs text-neutral-400">
-                        <span className="md:hidden text-neutral-500 font-mono text-[11px]">
+                      <td className="block md:table-cell px-0 py-1 md:px-5 md:py-3.5 text-xs text-fg-muted">
+                        <span className="md:hidden text-fg-subtle font-sans text-[11px] mr-1">
                           {t('created_at')}:{' '}
                         </span>
-                        {channel.created_at
-                          ? new Date(channel.created_at).toLocaleDateString()
-                          : '-'}
+                        <span className="timecode">
+                          {channel.created_at
+                            ? new Date(channel.created_at).toLocaleDateString()
+                            : '-'}
+                        </span>
                       </td>
-                      <td className="block md:table-cell px-0 pt-3 pb-1 md:px-6 md:py-4 text-right border-t border-white/5 md:border-t-0 mt-2 md:mt-0">
+                      <td className="block md:table-cell px-0 pt-3 pb-1 md:px-5 md:py-3.5 text-right border-t border-hairline md:border-t-0 mt-2 md:mt-0">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
-                          <button
-                            type="button"
+                          <Button
+                            size="sm"
+                            variant="secondary"
                             onClick={() => navigate(`/admin/channels/${channel.id}`)}
                             aria-label={t('manage_playlist')}
-                            className="flex flex-1 sm:flex-initial min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-[#0A84FF]/20 hover:text-[#0A84FF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                            className="flex-1 sm:flex-initial"
                           >
-                            <ListMusic className="h-4 w-4" />
+                            <ListMusic className="h-4 w-4 mr-1.5" />
                             <span>{t('manage_playlist')}</span>
-                          </button>
+                          </Button>
 
-                          <button
-                            type="button"
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleOpenEdit(channel)}
                             aria-label={t('edit_channel')}
-                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                            className="px-2"
                           >
                             <Edit3 className="h-4 w-4" />
-                          </button>
+                          </Button>
 
-                          <button
-                            type="button"
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleOpenDelete(channel)}
                             aria-label={t('delete_channel')}
-                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                            className="px-2 hover:text-danger hover:bg-danger/10"
                           >
                             <Trash2 className="h-4 w-4" />
-                          </button>
+                          </Button>
                         </div>
                       </td>
                     </motion.tr>
@@ -285,7 +285,7 @@ export function ChannelsPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Create / Edit Channel Modal */}

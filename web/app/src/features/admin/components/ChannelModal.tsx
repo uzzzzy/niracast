@@ -1,6 +1,7 @@
 import { AlertCircle, Loader2, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { Button, Field, Input } from '../../../components/ui';
 import { ApiError, type Channel } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 
@@ -86,41 +87,28 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
         e.preventDefault();
         onClose();
       }}
-      className="fixed inset-0 m-auto w-full max-w-md rounded-2xl border border-white/10 bg-[#16161B] p-6 text-[#F5F5F7] shadow-2xl backdrop:bg-black/75 backdrop:backdrop-blur-sm focus:outline-none"
+      className="fixed inset-0 m-auto w-full max-w-md glass-thick rounded-sheet p-6 shadow-[var(--shadow-2)] text-fg backdrop:bg-black/50 focus:outline-none"
     >
-      <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
-        <h3 className="text-base font-semibold text-[#F5F5F7] tracking-tight">
-          {channelToEdit ? t('edit_channel') : t('create_channel')}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('close')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-neutral-400 hover:bg-white/5 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-        >
+      <div className="flex items-center justify-between border-b border-hairline pb-4 mb-5">
+        <h3 className="title text-fg">{channelToEdit ? t('edit_channel') : t('create_channel')}</h3>
+        <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={t('close')}>
           <X className="h-5 w-5" />
-        </button>
+        </Button>
       </div>
 
       {inlineError && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300"
+          className="mb-4 flex items-start gap-2.5 rounded-tile border border-danger/30 bg-danger/10 p-3 text-xs text-danger"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-danger" />
           <span>{inlineError}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="channel-number"
-            className="block text-xs font-medium text-neutral-300 mb-1.5"
-          >
-            {t('channel_number')}
-          </label>
-          <input
+        <Field label={t('channel_number')} htmlFor="channel-number">
+          <Input
             id="channel-number"
             type="number"
             min="1"
@@ -129,18 +117,11 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
             onChange={(e) => setNumberVal(e.target.value)}
             placeholder={t('channel_number_placeholder')}
             required
-            className="w-full rounded-xl border border-white/10 bg-[#22222A] px-3.5 py-2.5 text-sm text-[#F5F5F7] placeholder-neutral-500 focus:border-[#0A84FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label
-            htmlFor="channel-name"
-            className="block text-xs font-medium text-neutral-300 mb-1.5"
-          >
-            {t('channel_name')}
-          </label>
-          <input
+        <Field label={t('channel_name')} htmlFor="channel-name">
+          <Input
             id="channel-name"
             type="text"
             maxLength={60}
@@ -148,24 +129,14 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
             onChange={(e) => setNameVal(e.target.value)}
             placeholder={t('channel_name_placeholder')}
             required
-            className="w-full rounded-xl border border-white/10 bg-[#22222A] px-3.5 py-2.5 text-sm text-[#F5F5F7] placeholder-neutral-500 focus:border-[#0A84FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
           />
-        </div>
+        </Field>
 
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="flex min-h-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-          >
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-hairline">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
             {t('cancel')}
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex min-h-[44px] items-center justify-center rounded-xl bg-[#0A84FF] px-4 py-2 text-xs font-semibold text-white shadow-md hover:bg-[#0071E3] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] disabled:opacity-50"
-          >
+          </Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +145,7 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
             ) : (
               t('save')
             )}
-          </button>
+          </Button>
         </div>
       </form>
     </dialog>

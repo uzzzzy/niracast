@@ -1,7 +1,9 @@
 import { Globe, LogOut, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router';
+import { Button } from '../../../components/ui/Button';
 import { useTranslation } from '../../../lib/i18n';
 import { useMotionMode } from '../../../lib/motion/mode';
+import { cn } from '../../../lib/utils';
 import { useAdminEvents } from '../hooks/useAdminEvents';
 
 interface AdminTopBarProps {
@@ -41,30 +43,28 @@ export function AdminTopBar({ onLogout, isLoggingOut = false }: AdminTopBarProps
   const motionLabel = `${t('motion_label')}: ${getMotionDisplay()}`;
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 bg-[#16161B]/80 px-3 sm:px-6 backdrop-blur-md">
+    <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between glass-thin border-t-0 border-x-0 border-b border-hairline px-4 sm:px-6 select-none">
       <div className="min-w-0 pr-2">
-        <h1 className="text-sm sm:text-base font-semibold text-[#F5F5F7] tracking-tight truncate max-w-[130px] sm:max-w-xs">
+        <h1 className="title md:large-title text-fg tracking-tight truncate max-w-[160px] sm:max-w-xs md:max-w-md">
           {getPageTitle()}
         </h1>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
         {/* SSE Live / Reconnecting chip */}
         <div
           role="status"
           aria-live="polite"
-          className={
-            isLive
-              ? 'flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 sm:px-3 py-1 text-xs font-medium text-emerald-400'
-              : 'flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 sm:px-3 py-1 text-xs font-medium text-amber-400'
-          }
+          className={cn(
+            'flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-wider',
+            isLive ? 'border-live/30 bg-live/15 text-live' : 'border-idle/30 bg-idle/15 text-idle',
+          )}
         >
           <span
-            className={
-              isLive
-                ? 'h-2 w-2 rounded-full bg-emerald-400 animate-live-pulse'
-                : 'h-2 w-2 rounded-full bg-amber-400'
-            }
+            className={cn(
+              'h-1.5 w-1.5 rounded-full shrink-0',
+              isLive ? 'bg-live animate-live-pulse' : 'bg-idle',
+            )}
           />
           <span className="hidden md:inline">
             {isLive ? t('live_status_connected') : t('live_status_reconnecting')}
@@ -72,41 +72,42 @@ export function AdminTopBar({ onLogout, isLoggingOut = false }: AdminTopBarProps
         </div>
 
         {/* Motion mode switcher */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={cyclePreference}
           aria-label={motionLabel}
           title={motionLabel}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 sm:px-3 py-2 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+          className="hidden sm:inline-flex gap-1.5 px-2.5"
         >
-          <Sparkles className="h-4 w-4 text-[#0A84FF]" />
-          <span className="uppercase font-mono text-[11px] hidden sm:inline">
-            {getMotionDisplay()}
-          </span>
-        </button>
+          <Sparkles className="h-4 w-4 text-accent" />
+          <span className="uppercase font-mono text-[11px]">{getMotionDisplay()}</span>
+        </Button>
 
         {/* Language toggle */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={toggleLang}
           aria-label={t('language')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2 sm:px-3 py-2 text-xs font-semibold text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+          className="gap-1 px-2.5"
         >
           <Globe className="h-4 w-4" />
-          <span className="uppercase text-[11px]">{lang}</span>
-        </button>
+          <span className="uppercase text-[11px] font-mono">{lang}</span>
+        </Button>
 
         {/* Logout button */}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onLogout}
           disabled={isLoggingOut}
           aria-label={t('logout')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 sm:px-3 py-2 text-xs font-medium text-neutral-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] disabled:opacity-50"
+          className="gap-1.5 px-2.5 hover:text-danger hover:bg-danger/10"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">{isLoggingOut ? t('logging_out') : t('logout')}</span>
-        </button>
+        </Button>
       </div>
     </header>
   );

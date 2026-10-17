@@ -16,23 +16,23 @@ export const DigitEntryOverlay: React.FC<DigitEntryOverlayProps> = ({ digits, ha
       className="pointer-events-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center justify-center transition-opacity"
     >
       <div
-        className={`flex flex-col items-center justify-center rounded-3xl border px-10 py-8 shadow-2xl transition-spring ${
-          hasError
-            ? 'animate-shake border-red-500/50 bg-[#16161B]/95 text-red-400'
-            : 'border-white/20 bg-[#16161B]/95 text-white'
+        className={`flex flex-col items-center justify-center rounded-sheet border border-hairline glass-hud px-12 py-10 shadow-2 transition-spring ${
+          hasError ? 'animate-shake border-danger/50 text-danger' : 'text-fg'
         }`}
       >
         <div className="flex items-center gap-3">
-          <Hash className="h-10 w-10 text-[#0A84FF]" />
-          <span className="font-mono text-6xl font-extrabold tracking-wider">{digits || '—'}</span>
+          <Hash className="h-10 w-10 text-accent" />
+          <span className="font-mono text-6xl font-extrabold tracking-wider timecode">
+            {digits || '—'}
+          </span>
         </div>
 
         {hasError ? (
-          <p data-testid="digit-error-message" className="mt-4 text-base font-medium text-red-400">
+          <p data-testid="digit-error-message" className="mt-4 text-base font-medium text-danger">
             {t('no_such_channel')}
           </p>
         ) : (
-          <p className="mt-4 text-xs uppercase tracking-widest text-[#8E8E93]">
+          <p className="mt-4 text-xs uppercase tracking-widest text-fg-subtle label-caps">
             {t('channel_number_input', undefined, { number: digits })}
           </p>
         )}

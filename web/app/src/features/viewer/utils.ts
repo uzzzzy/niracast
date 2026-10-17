@@ -25,6 +25,18 @@ export function formatDuration(seconds: number): string {
   return `${hours}h ${String(remainingMins).padStart(2, '0')}m`;
 }
 
+/** Broadcast-style timecode: M:SS under an hour, H:MM:SS from one hour up. */
+export function formatTimecode(seconds: number): string {
+  const totalSec = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = String(totalSec % 60).padStart(2, '0');
+  if (hours > 0) {
+    return `${hours}:${String(mins).padStart(2, '0')}:${secs}`;
+  }
+  return `${mins}:${secs}`;
+}
+
 export function formatCountdown(seconds: number): string {
   const totalSec = Math.max(0, Math.floor(seconds));
   const mins = Math.floor(totalSec / 60);

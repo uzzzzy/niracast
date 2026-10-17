@@ -47,6 +47,10 @@ export const translations = {
     motion_lite: 'Ringan',
     motion_reduced: 'Tereduksi',
     motion_tooltip: 'Mode Gerakan: {mode}',
+    theme: 'Tema',
+    theme_system: 'Sistem',
+    theme_light: 'Terang',
+    theme_dark: 'Gelap',
     now: 'Sekarang',
     no_epg: 'Tidak ada jadwal acara',
 
@@ -260,6 +264,10 @@ export const translations = {
     motion_lite: 'Lite',
     motion_reduced: 'Reduced',
     motion_tooltip: 'Motion Mode: {mode}',
+    theme: 'Theme',
+    theme_system: 'System',
+    theme_light: 'Light',
+    theme_dark: 'Dark',
     now: 'Now',
     no_epg: 'No schedule available',
 

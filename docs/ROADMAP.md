@@ -61,6 +61,8 @@
 | 6 | `feature/motion-system` | Physics spring animation tokens, View Transitions integration, layout morphing, and lite-motion fallback toggle. | **DONE**: Motion tokens, full/lite/reduced modes, admin AnimatePresence route transitions, and CSS/WAAPI viewer channel transitions operational. |
 | 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | **DONE**: In-house zero-dependency spatial nav, remote key map (Tizen/webOS/Android TV), TV channel rail, numeric direct jump, volume persistence, and TV profile detection verified. |
 | 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | **DONE**: Mobile profile detection (`?ui=mobile`), pure swipe gesture engine, bottom sheets for channels and EPG, mobile admin navigation bar, responsive stacked tables, and touch drag sensor for playlist reordering verified. All roadmap phases 1-8 complete. |
+| — | UI revamp: Control Room Glass | "Control Room Glass" design system (`docs/DESIGN.md`): semantic tokens, Apple-style materials, dark/light themes, shared UI primitives (`web/app/src/components/ui/`), desktop glass blur with solid fallbacks, WebP assets, server idle frame update, and bundle chunk isolation. | **DONE**: Design system fully implemented; semantic tokens, dark/light themes with pre-paint script (`theme.ts`), shared UI primitives, desktop blur with solid fallbacks, 13 WebP assets, server idle frame rebuilt, token guards, timecode formatter, and Vite bundle isolation (pinned `hls.js`) verified across test suites (205 tests) and real browser checks. |
+
 
 ## Future Plan (not yet scheduled)
 

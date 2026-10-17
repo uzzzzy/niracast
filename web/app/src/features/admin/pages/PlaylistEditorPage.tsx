@@ -21,7 +21,6 @@ import {
   Clock,
   Film,
   GripVertical,
-  ListMusic,
   Loader2,
   Plus,
   RotateCcw,
@@ -34,9 +33,12 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
+import emptyPlaylist from '../../../assets/empty-playlist.webp';
+import { Button, Card, EmptyState, Input } from '../../../components/ui';
 import { api, type MediaFile } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 import { DURATION, EASE } from '../../../lib/motion/tokens';
+import { cn } from '../../../lib/utils';
 import {
   addToPlaylist,
   calculateTotalDuration,
@@ -77,9 +79,12 @@ function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#16161B] p-3 text-sm transition-colors hover:border-white/20 ${
-        isDragging ? 'border-[#0A84FF] shadow-2xl bg-[#22222A]' : ''
-      }`}
+      className={cn(
+        'group flex items-center justify-between gap-3 rounded-tile border border-hairline p-3 text-sm transition-colors',
+        isDragging
+          ? 'bg-surface-3 ring-1 ring-accent shadow-[var(--shadow-2)]'
+          : 'bg-surface-2 hover:bg-surface-3/50',
+      )}
     >
       <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
@@ -87,43 +92,43 @@ function SortableItem({
           {...attributes}
           {...listeners}
           aria-label="Reorder item"
-          className="cursor-grab touch-none flex min-h-[44px] min-w-[44px] items-center justify-center p-1 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] rounded"
+          className="cursor-grab touch-none flex min-h-[44px] min-w-[44px] items-center justify-center p-1 text-fg-subtle hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-control"
         >
           <GripVertical className="h-4 w-4" />
         </button>
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-white/5 font-mono text-[11px] font-semibold text-neutral-400">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-control bg-surface-3 timecode text-[11px] font-semibold text-fg-muted">
           {index + 1}
         </span>
-        <span className="truncate font-medium text-[#F5F5F7]" title={item.filename}>
+        <span className="truncate font-medium text-fg" title={item.filename}>
           {item.filename}
         </span>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <span className="font-mono text-xs text-neutral-400">
-          {formatDuration(item.duration_sec)}
-        </span>
-        <button
+        <span className="timecode text-xs text-fg-muted">{formatDuration(item.duration_sec)}</span>
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onClick={() => onRemove(index)}
           aria-label={t('remove_from_playlist')}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl text-neutral-400 hover:bg-red-500/10 hover:text-red-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+          className="hover:text-danger hover:bg-danger/10"
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
     </div>
   );
 }
 
-const TIMELINE_COLORS = [
-  '#0A84FF',
-  '#30D158',
-  '#BF5AF2',
-  '#FF9F0A',
-  '#64D2FF',
-  '#FF453A',
-  '#FFD60A',
+const TIMELINE_CLASSES = [
+  'bg-accent',
+  'bg-live',
+  'bg-accent/80',
+  'bg-idle',
+  'bg-live/80',
+  'bg-accent/60',
+  'bg-idle/80',
 ];
 
 export function PlaylistEditorPage() {
@@ -291,36 +296,36 @@ export function PlaylistEditorPage() {
       {/* Header bar */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-4">
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={handleBack}
             aria-label={t('back_to_channels_list')}
-            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
           >
             <ArrowLeft className="h-5 w-5" />
-          </button>
+          </Button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-bold text-[#0A84FF]">
+              <span className="timecode text-xs font-bold px-2 py-0.5 rounded-control bg-surface-2 border border-hairline text-accent">
                 #{channel?.number ?? channelId}
               </span>
-              <h2 className="text-xl font-bold tracking-tight text-[#F5F5F7]">
+              <h2 className="title text-xl font-bold tracking-tight text-fg">
                 {channel?.name || t('playlist_editor_title')}
               </h2>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-neutral-400">
-              <span className="flex items-center gap-1 font-mono">
-                <Clock className="h-3.5 w-3.5 text-neutral-500" />
+            <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-fg-muted">
+              <span className="flex items-center gap-1 timecode">
+                <Clock className="h-3.5 w-3.5 text-fg-subtle" />
                 {t('total_duration')}: {formatDuration(totalDuration, true)}
               </span>
               <span>•</span>
-              <span>
+              <span className="timecode">
                 {playlistItems.length} {t('item_count')}
               </span>
               {isDirty && (
                 <>
                   <span>•</span>
-                  <span className="font-medium text-amber-400">{t('unsaved_changes')}</span>
+                  <span className="font-medium text-idle">{t('unsaved_changes')}</span>
                 </>
               )}
             </div>
@@ -329,56 +334,54 @@ export function PlaylistEditorPage() {
 
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
-          <button
-            type="button"
-            onClick={handleRevert}
-            disabled={!isDirty || isSaving}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <RotateCcw className="h-4 w-4" />
+          <Button variant="secondary" onClick={handleRevert} disabled={!isDirty || isSaving}>
+            <RotateCcw className="h-4 w-4 mr-1.5" />
             <span>{t('revert_playlist')}</span>
-          </button>
+          </Button>
 
-          <button
-            type="button"
+          <Button
+            variant="primary"
             onClick={handleSave}
             disabled={!isDirty || isSaving}
-            className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[#0A84FF] px-4 py-2 text-xs font-semibold text-white shadow-lg transition-all hover:bg-[#0071E3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] disabled:opacity-40 disabled:pointer-events-none"
+            aria-label={t('save_playlist')}
           >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+            ) : (
+              <Save className="h-4 w-4 mr-1.5" />
+            )}
             <span>{isSaving ? t('saving_playlist') : t('save_playlist')}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Loop Timeline Bar */}
-      <div className="rounded-2xl border border-white/10 bg-[#16161B] p-4 shadow-sm">
-        <div className="mb-2 flex items-center justify-between text-xs text-neutral-400 font-medium">
+      <Card className="p-4">
+        <div className="mb-2 flex items-center justify-between text-xs text-fg-muted font-medium">
           <span>{t('loop_timeline')}</span>
-          <span className="font-mono">{formatDuration(totalDuration, true)}</span>
+          <span className="timecode">{formatDuration(totalDuration, true)}</span>
         </div>
         <div
-          className="relative flex h-5 w-full overflow-hidden rounded-lg bg-black/40 border border-white/10"
+          className="relative flex h-5 w-full overflow-hidden rounded-control bg-surface-0 border border-hairline"
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={totalDuration}
           aria-valuenow={totalDuration}
         >
           {totalDuration === 0 ? (
-            <div className="flex h-full w-full items-center justify-center text-[10px] text-neutral-500">
+            <div className="flex h-full w-full items-center justify-center text-[10px] text-fg-subtle">
               {t('empty_playlist')}
             </div>
           ) : (
             playlistItems.map((item, idx) => {
               const widthPct = (item.duration_sec / totalDuration) * 100;
-              const color = TIMELINE_COLORS[idx % TIMELINE_COLORS.length];
               return (
                 <div
                   key={item.instanceId}
                   style={{
                     width: `${Math.max(0.5, widthPct)}%`,
                   }}
-                  className="h-full border-r border-black/40 overflow-hidden"
+                  className="h-full border-r border-black/30 overflow-hidden"
                   title={`${item.filename} (${formatDuration(item.duration_sec)})`}
                 >
                   <motion.div
@@ -387,68 +390,71 @@ export function PlaylistEditorPage() {
                     transition={{ duration: DURATION.normal, ease: EASE.spring }}
                     style={{
                       transformOrigin: 'left',
-                      backgroundColor: color,
                     }}
-                    className="h-full w-full hover:brightness-125 cursor-pointer opacity-85 hover:opacity-100"
+                    className={cn(
+                      'h-full w-full hover:brightness-125 cursor-pointer opacity-85 hover:opacity-100',
+                      TIMELINE_CLASSES[idx % TIMELINE_CLASSES.length],
+                    )}
                   />
                 </div>
               );
             })
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Two-Pane Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 min-h-[500px]">
         {/* Left Pane: Media Library (5 cols) */}
-        <section
+        <Card
+          as="section"
           aria-label={t('media_library_pane')}
-          className="flex flex-col rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-lg lg:col-span-5"
+          className="flex flex-col p-5 lg:col-span-5"
         >
-          <div className="mb-4">
-            <h3 className="text-sm font-semibold text-[#F5F5F7] tracking-tight mb-2">
+          <div className="mb-4 space-y-2">
+            <h3 className="title text-sm font-semibold text-fg tracking-tight">
               {t('media_library_pane')}
             </h3>
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-              <input
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-fg-subtle" />
+              <Input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search_media_placeholder')}
-                className="w-full rounded-xl border border-white/10 bg-[#22222A] pl-10 pr-4 py-2.5 text-xs text-[#F5F5F7] placeholder-neutral-500 focus:border-[#0A84FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                className="pl-10"
               />
             </div>
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto pr-1 max-h-[550px]">
             {isMediaLoading ? (
-              <div className="flex h-32 items-center justify-center text-neutral-400">
-                <Loader2 className="h-5 w-5 animate-spin text-[#0A84FF]" />
+              <div className="flex h-32 items-center justify-center text-fg-muted">
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
               </div>
             ) : filteredMedia.length === 0 ? (
-              <div className="py-8 text-center text-xs text-neutral-400">
-                <Film className="mx-auto h-8 w-8 text-neutral-600 mb-2" />
+              <div className="py-8 text-center text-xs text-fg-muted">
+                <Film className="mx-auto h-8 w-8 text-fg-subtle mb-2" />
                 <span>{t('no_media_found')}</span>
               </div>
             ) : (
               filteredMedia.map((media) => (
                 <div
                   key={media.id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-[#22222A]/60 p-3 text-xs transition-colors hover:border-white/20 hover:bg-[#22222A]"
+                  className="flex items-center justify-between gap-3 rounded-tile border border-hairline bg-surface-2 p-3 text-xs transition-colors hover:bg-surface-3"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-neutral-200" title={media.filename}>
+                    <p className="truncate font-medium text-fg" title={media.filename}>
                       {media.filename}
                     </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-neutral-400 font-mono">
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-fg-muted timecode">
                       <span>{formatDuration(media.duration_sec)}</span>
                       <span>•</span>
-                      <span className="rounded bg-white/10 px-1 py-0.5">
+                      <span className="rounded bg-surface-3 px-1 py-0.5">
                         {media.codec_video.toUpperCase()}
                       </span>
-                      <span className="rounded bg-white/10 px-1 py-0.5">
+                      <span className="rounded bg-surface-3 px-1 py-0.5">
                         {media.codec_audio.toUpperCase()}
                       </span>
                       {media.width > 0 && (
@@ -459,45 +465,48 @@ export function PlaylistEditorPage() {
                     </div>
                   </div>
 
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="icon"
                     onClick={() => handleAddMedia(media)}
                     aria-label={`${t('add_to_playlist')} ${media.filename}`}
-                    className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-white/5 text-neutral-300 hover:bg-[#0A84FF] hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                    className="shrink-0 hover:bg-accent hover:text-white"
                   >
                     <Plus className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               ))
             )}
           </div>
-        </section>
+        </Card>
 
         {/* Right Pane: Playlist with dnd-kit Sortable (7 cols) */}
-        <section
+        <Card
+          as="section"
           aria-label={t('playlist_pane')}
-          className="flex flex-col rounded-2xl border border-white/10 bg-[#16161B] p-5 shadow-lg lg:col-span-7"
+          className="flex flex-col p-5 lg:col-span-7"
         >
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#F5F5F7] tracking-tight">
+            <h3 className="title text-sm font-semibold text-fg tracking-tight">
               {t('playlist_pane')}
             </h3>
-            <span className="font-mono text-xs text-neutral-400">
+            <span className="timecode text-xs text-fg-muted">
               {playlistItems.length} {t('item_count')}
             </span>
           </div>
 
           <div className="flex-1 overflow-y-auto pr-1 max-h-[550px]">
             {isPlaylistLoading ? (
-              <div className="flex h-32 items-center justify-center text-neutral-400">
-                <Loader2 className="h-5 w-5 animate-spin text-[#0A84FF]" />
+              <div className="flex h-32 items-center justify-center text-fg-muted">
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
               </div>
             ) : playlistItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-white/10 py-16 text-center">
-                <ListMusic className="h-10 w-10 text-neutral-600 mb-2" />
-                <p className="text-sm font-medium text-neutral-300">{t('empty_playlist')}</p>
-                <p className="mt-1 text-xs text-neutral-500 max-w-xs">{t('empty_playlist_desc')}</p>
-              </div>
+              <EmptyState
+                art={emptyPlaylist}
+                title={t('empty_playlist')}
+                description={t('empty_playlist_desc')}
+              />
             ) : (
               <DndContext
                 sensors={sensors}
@@ -528,7 +537,7 @@ export function PlaylistEditorPage() {
               </DndContext>
             )}
           </div>
-        </section>
+        </Card>
       </div>
     </div>
   );

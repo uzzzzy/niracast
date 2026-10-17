@@ -17,19 +17,12 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
+        // AdminPage and ViewerPage are React.lazy imports in App.tsx, so the
+        // bundler already splits them into separate chunks. Only hls.js (no deps)
+        // is pinned here: a manual chunk also absorbs its unassigned dependencies,
+        // which previously pulled React, the router and shared UI into the admin
+        // chunk and made /watch download motion and dnd-kit.
         manualChunks(id) {
-          if (
-            id.includes('AdminPage') ||
-            id.includes('features/admin') ||
-            id.includes('node_modules/@dnd-kit') ||
-            id.includes('node_modules/sonner') ||
-            id.includes('node_modules/motion')
-          ) {
-            return 'admin';
-          }
-          if (id.includes('ViewerPage') || id.includes('features/viewer')) {
-            return 'viewer';
-          }
           if (id.includes('node_modules/hls.js')) {
             return 'hls';
           }

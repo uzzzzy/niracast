@@ -13,7 +13,7 @@ export function App() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#0B0B0E] text-neutral-400">
+        <div className="flex min-h-screen items-center justify-center bg-surface-0 text-fg-muted">
           <div className="text-sm">Loading...</div>
         </div>
       }

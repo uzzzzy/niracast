@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { AdminEventsProvider } from '../hooks/useAdminEvents';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopBar } from './AdminTopBar';
+import { AmbientBackground } from './AmbientBackground';
 import { MotionProvider } from './MotionProvider';
 
 interface AdminShellProps {
@@ -21,9 +22,14 @@ export function AdminShell({
   return (
     <AdminEventsProvider>
       <MotionProvider>
-        <div className="flex h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-[#0B0B0E] text-[#F5F5F7] font-sans antialiased flex-col md:flex-row">
-          <AdminSidebar firstChannelId={firstChannelId} />
-          <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        <div className="relative flex h-[100dvh] w-full max-w-[100vw] overflow-hidden text-fg font-sans antialiased flex-col md:flex-row">
+          <AmbientBackground />
+          <AdminSidebar
+            firstChannelId={firstChannelId}
+            onLogout={onLogout}
+            isLoggingOut={isLoggingOut}
+          />
+          <div className="relative z-10 flex flex-1 flex-col overflow-hidden min-w-0">
             <AdminTopBar onLogout={onLogout} isLoggingOut={isLoggingOut} />
             <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 min-w-0">
               {children}
@@ -31,14 +37,14 @@ export function AdminShell({
           </div>
           <Toaster
             position="bottom-right"
-            theme="dark"
             richColors
             toastOptions={{
+              className: 'glass-thick text-fg border-hairline',
               style: {
-                background: '#16161B',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#F5F5F7',
-                borderRadius: '0.75rem',
+                background: 'var(--mat-thick)',
+                border: '1px solid var(--hairline)',
+                color: 'var(--fg)',
+                borderRadius: 'var(--radius-card, 1.25rem)',
               },
             }}
           />
