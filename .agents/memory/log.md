@@ -43,6 +43,11 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Controls & i18n: Added keyboard controls (M, F, P, G, C, arrows, PageUp/PageDown, channel number digits, Esc, ?) and id/en i18n via `src/lib/i18n.ts`.
   - Vite optimization: Isolated `hls.js` into a dedicated vendor chunk (`hls`).
   - Verified: Go tests and vetting passed; frontend checks (`pnpm check`, `typecheck`, `test`, `build`) passed; real browser verification confirmed 1280x720 HLS playback, late-mount ref fix, HUD auto-hide, channel drawer navigation, EPG guide sheet, and idle card rendering.
+- **Phase 5 CMS Studio Completed** (`feature/cms-studio`):
+  - Backend admin endpoints: Implemented `GET /api/v1/channels/{id}/playlist` with `models.GetPlaylist`, channel deletion playout termination via `supervisor.StopStream`, `GET /api/v1/media` with video/audio codecs and dimensions, single-flight `MediaScanner` guarding `POST /api/v1/media/rescan` and `scanLoop`, `GET /api/v1/media/scan-status`, and `GET /api/v1/system` (uptime, media/channel counts, running channels, FFmpeg version, idle clip state).
+  - Admin feature module (`web/app/src/features/admin`): Built authentication gate, login card, admin shell with sidebar navigation, Overview live monitor via SSE `EventSource` and manual item skip, Channels CRUD with native `<dialog>` modals, drag-and-drop playlist editor with `@dnd-kit/sortable`, loop timeline, and dirty state tracking, Media library with codec badges and rescan status polling, and System metrics page.
+  - Tooling & UI: Integrated `@dnd-kit` suite and `sonner` in the lazy admin chunk, native `<dialog>` modals without heavy UI frameworks, and id/en i18n support.
+  - Verified: Backend unit/integration tests and live `curl` API tests passed; frontend checks (`pnpm check`, `pnpm typecheck`, `pnpm test` [49 tests], `pnpm build`) passed; real browser run verified login, live Overview via SSE, Skip button live playout advance, and playlist drag-and-drop reordering persisted on the server.
 
 
 
