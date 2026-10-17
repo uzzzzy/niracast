@@ -39,6 +39,12 @@
 - **2026-10-17**: Future plan expanded with F3 and F4 (docs/ROADMAP.md):
   - F3 (Public link security and request-flood protection): Priority normal (must precede any public/internet exposure). Mitigates remaining attack surface (unauthenticated HLS manifest/segment routes and lack of rate limiting) via short-lived HMAC-signed stream tokens, per-IP rate limiting (RemoteAddr default, never trust X-Forwarded-For without trusted proxy config), concurrency cap on FFmpeg instances, per-channel start cooldown, 429 Retry-After, and security headers.
   - F4 (Anti-recording / stream protection): Priority LOW (explicitly deprioritised by user decision). Acknowledged technical reality that any stream playable on client hardware can be captured; casual deterrence only (AES-128 encryption with tokenized key delivery, forensic watermarking which sacrifices zero-CPU stream copy); strictly deferred until after F3.
+- **Phase 6 Motion System Decisions**:
+  - `motion` 14.3.0 exact, imported only in the lazy admin chunk and guarded by a test (`motionGuard.test.ts`) that fails if the viewer imports it.
+  - `AnimatePresence` chosen over the View Transitions API (cross-browser, ties to `MotionConfig`, avoids snapshot freezes over live video).
+  - Reduced motion precedence: `prefers-reduced-motion` strictly beats a stored `'full'`.
+  - Lite heuristic: `hardwareConcurrency <= 4` or `deviceMemory <= 2` is unverified.
+  - CSS guard test forbids animating layout props (`width`, `height`, `top`, `left`, `margin`, `padding`), enforcing GPU-composited `transform` and `opacity`.
 
 
 

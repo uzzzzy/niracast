@@ -53,6 +53,12 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Added Priority overview to Future Plan section.
   - Recorded 2026-10-17 server probing findings (DB and media files protected at 404, /api/v1/media authenticated, live 5x2s segment rolling window; gaps in unauthenticated manifest/segment URLs and lack of rate limiting).
   - Updated `.agents/memory/decisions.md` and `.agents/memory/known-gaps.md`.
+- **Phase 6 Motion System Completed** (`feature/motion-system`):
+  - Motion tokens & resolver (`web/app/src/lib/motion`): Defined pure duration/easing tokens in `tokens.ts`, runtime mode resolver in `mode.ts` (`full`, `lite`, `reduced`), and `useMotionMode` hook syncing `data-motion` attribute on `<html>` and persisted in `localStorage` under `'motion'` (`auto`, `full`, `lite`).
+  - Admin motion: Integrated `motion` 14.3.0 in lazy admin chunk, wrapped admin shell in `MotionProvider` + `AnimatePresence` route transitions, and added motion switcher in `AdminTopBar`.
+  - Viewer channel transitions: Implemented lightweight CSS/WAAPI channel-switch transition (fade, volume ramp, channel bump) and added 'N' keyboard shortcut toggle.
+  - Guardrails: Added `motionGuard.test.ts` ensuring viewer chunk remains free of the motion library, and verified no layout properties are animated.
+  - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test` (74 tests), and `pnpm build` passed; real browser testing verified video playback, ArrowDown channel switching, and `full`/`lite` mode switching (halving `--dur-fast` to 60ms and disabling live pulse).
 
 
 
