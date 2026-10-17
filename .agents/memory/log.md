@@ -59,6 +59,15 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Viewer channel transitions: Implemented lightweight CSS/WAAPI channel-switch transition (fade, volume ramp, channel bump) and added 'N' keyboard shortcut toggle.
   - Guardrails: Added `motionGuard.test.ts` ensuring viewer chunk remains free of the motion library, and verified no layout properties are animated.
   - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test` (74 tests), and `pnpm build` passed; real browser testing verified video playback, ArrowDown channel switching, and `full`/`lite` mode switching (halving `--dur-fast` to 60ms and disabling live pulse).
+- **Phase 7 TV UI Completed** (`feature/tv-ui`):
+  - TV profile detection (`web/app/src/lib/device.ts`): User agent heuristic detection (Tizen, webOS, Android TV, Google TV, Apple TV, Fire TV) and query parameter override (`?profile=tv`), managing `data-tv="true"` on `<html>`.
+  - In-house spatial navigation (`web/app/src/lib/spatialNav.ts`): Built zero-dependency 2D spatial navigation calculating geometric candidate distance with roving tabindex and automatic scroll alignment (avoided `norigin-spatial-navigation`).
+  - Remote key map (`web/app/src/lib/remoteKeys.ts`): Normalizes D-pad navigation, Enter/OK, Return/Back, ChannelUp/Down, VolumeUp/Down, numeric key entry, and color buttons across TV platforms.
+  - Viewer TV components (`web/app/src/features/viewer/components`): Added `ChannelRailTv` horizontal drawer rail, `DigitEntryOverlay` for direct channel number jumping, `RemoteLegendModal` for on-screen shortcut guidance, and `VolumeToast` on-screen level indicator.
+  - Volume persistence (`web/app/src/features/viewer/volumePersistence.ts`): Persists volume level and mute state in `localStorage` across channel switches and page reloads.
+  - Styling: High-contrast focus rings, oversized typography, safe area padding (`env(safe-area-inset-*)`), and TV CSS variables in `src/index.css`.
+  - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test` (151 unit/integration tests passing), and `pnpm build` passed; all backend Go tests passed. TV profile detection, remote key mapping, spatial nav, and volume persistence verified.
+  - Unverified & gaps: Real Tizen and webOS remote keycodes and TV browser performance remain unverified on physical hardware; stray digit overlay '# 6 / CHANNEL 6' was observed once transiently after sending ArrowLeft x2 + Enter via browser automation (slated for investigation in Phase 8).
 
 
 

@@ -45,6 +45,12 @@
   - Reduced motion precedence: `prefers-reduced-motion` strictly beats a stored `'full'`.
   - Lite heuristic: `hardwareConcurrency <= 4` or `deviceMemory <= 2` is unverified.
   - CSS guard test forbids animating layout props (`width`, `height`, `top`, `left`, `margin`, `padding`), enforcing GPU-composited `transform` and `opacity`.
+- **Phase 7 TV UI Decisions**:
+  - In-house spatial navigation: Implemented custom geometric/Euclidean distance spatial navigation in `src/lib/spatialNav.ts` with zero external dependencies (avoiding `norigin-spatial-navigation` or heavy third-party packages) to keep viewer bundle size under budget and avoid lifecycle friction with React 19.
+  - TV profile detection: Built dual detection via user agent strings (Tizen, webOS, Android TV, etc.) and explicit query parameter (`?profile=tv`) for testing; sets `data-tv="true"` on `<html>` to scale typography, enlarge focus outlines, and enforce safe-area margins.
+  - Remote key map: Normalized Smart TV remote keycodes (D-pad arrows, OK, Return/Back, ChannelUp/Down, VolumeUp/Down, 0-9 numeric keypad, color buttons) into semantic actions in `src/lib/remoteKeys.ts`.
+  - Volume & mute persistence: Volume and muted states are persisted to `localStorage` (`tv_stream_volume`, `tv_stream_muted`) so remounted video elements on channel switches preserve user volume level.
+  - TV UI components: Built dedicated 10-foot components (`ChannelRailTv`, `DigitEntryOverlay`, `RemoteLegendModal`, `VolumeToast`) maintaining contrast and high visibility without obstructing video playout.
 
 
 

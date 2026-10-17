@@ -21,6 +21,9 @@
 - **Live Stream Recording Not Prevented**: Live stream can be recorded or captured by viewers; casual deterrence only (AES-128, watermarking), and watermarking sacrifices zero-CPU copy mode. Priority: LOW (user decision). Target: Future Plan F4 (`docs/ROADMAP.md`).
 - **Admin Chunk Growth**: Admin chunk grew to 415kB raw / 126kB gzip because of the motion library (idea: `LazyMotion`/`m` components to shrink).
 - **Sonner Height Transition**: `sonner`'s own CSS transitions `height` (third-party, admin only).
-- **Volume Reset on Channel Switch**: User volume resets to 1 after a channel switch because the video element remounts (to fix: persist volume/mute in localStorage, planned in phase 7).
+- **Volume Reset on Channel Switch (Fixed)**: Volume level and mute state now persist across channel switches and page reloads via `volumePersistence.ts` in `localStorage` (`tv_stream_volume`, `tv_stream_muted`).
+- **TV Profile Detection, Remote Key Map, Spatial Nav (Fixed)**: Smart TV profile detection (`device.ts`), remote key normalization (`remoteKeys.ts`), and zero-dependency spatial navigation (`spatialNav.ts`) are implemented and verified in tests and simulation.
 - **Motion Performance & Browser Compatibility (Unverified)**: FPS under 4x CPU throttle and Safari/TV behaviour unverified.
+- **Smart TV Keycodes & Browser Performance (Unverified)**: Real physical Tizen and webOS device keycode reception, input latency, and low-end TV browser performance remain unverified on hardware (tested via emulation and test suites).
+- **Stray Digit Overlay Transient Glitch**: A stray digit overlay ('# 6 / CHANNEL 6') was seen once transiently after sending ArrowLeft x2 + Enter via browser automation; investigate and resolve in Phase 8.
 

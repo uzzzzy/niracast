@@ -18,7 +18,7 @@
 
 ### Viewer Device Priority
 1. **Web / Desktop (Priority 1)**: Primary target platform with mouse hover glass HUD, keyboard shortcuts, and picture-in-picture.
-2. **Smart TV (Priority 2)**: 10-foot viewing experience with spatial D-pad remote navigation, oversized typography, and high contrast.
+2. **Smart TV (Priority 2)**: 10-foot viewing experience with spatial D-pad remote navigation, oversized typography, and high contrast. Spatial navigation is implemented in-house with zero new dependencies instead of external libraries like `norigin-spatial-navigation` to keep bundle size lightweight and maintain full control over DOM focus behavior.
 3. **Mobile (Priority 3)**: Responsive touch polish, swipe gestures, and compact drawer navigation (addressed last).
 
 ### Zero-CPU Idle Playout Architecture
@@ -59,7 +59,7 @@
 | 4 | `feature/viewer-page` | Dedicated viewer (`/watch/{id}`) with custom `hls.js` hook (exponential backoff), glass HUD, channel switcher, and Now/Next EPG. | **DONE**: Desktop browser plays 1280x720 HLS stream with operational HUD, channel drawer, EPG guide sheet, and idle fallback card. |
 | 5 | `feature/cms-studio` | CMS dashboard: media file library viewer, drag-and-drop playlist reordering, visual schedule planner, and live status monitor. | **DONE**: Operator can reorder channel playlist via drag-and-drop, advance live track via skip, manage channels/media, and inspect real-time SSE playout. |
 | 6 | `feature/motion-system` | Physics spring animation tokens, View Transitions integration, layout morphing, and lite-motion fallback toggle. | **DONE**: Motion tokens, full/lite/reduced modes, admin AnimatePresence route transitions, and CSS/WAAPI viewer channel transitions operational. |
-| 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | Viewer page navigable entirely via arrow keys and Enter on TV browser simulation. |
+| 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | **DONE**: In-house zero-dependency spatial nav, remote key map (Tizen/webOS/Android TV), TV channel rail, numeric direct jump, volume persistence, and TV profile detection verified. |
 | 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | Web app functions responsively on standard mobile screen sizes without horizontal clipping. |
 
 ## Future Plan (not yet scheduled)
