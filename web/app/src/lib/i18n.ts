@@ -66,6 +66,12 @@ export const translations = {
     muted_chip: 'Dibisukan',
     unmuted_chip: 'Bunyi aktif',
 
+    // Mobile Gestures & Bottom Sheets
+    drag_handle: 'Tarik ke bawah untuk menutup',
+    swipe_channel_switch: 'Geser vertikal untuk ganti saluran',
+    double_tap_mute: 'Ketuk dua kali untuk bisu/bunyi',
+    double_tap_fullscreen: 'Ketuk dua kali untuk layar penuh',
+
     // CMS Studio Auth
     login_title: 'Studio Masuk',
     login_subtitle: 'Masukkan kata sandi administrator untuk mengelola siaran.',
@@ -272,6 +278,12 @@ export const translations = {
     live_cannot_pause: 'Live TV cannot be paused',
     muted_chip: 'Muted',
     unmuted_chip: 'Unmuted',
+
+    // Mobile Gestures & Bottom Sheets
+    drag_handle: 'Drag down to close',
+    swipe_channel_switch: 'Swipe vertically to switch channel',
+    double_tap_mute: 'Double-tap to mute/unmute',
+    double_tap_fullscreen: 'Double-tap for fullscreen',
 
     // CMS Studio Auth
     login_title: 'Studio Login',

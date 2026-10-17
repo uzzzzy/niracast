@@ -25,5 +25,8 @@
 - **TV Profile Detection, Remote Key Map, Spatial Nav (Fixed)**: Smart TV profile detection (`device.ts`), remote key normalization (`remoteKeys.ts`), and zero-dependency spatial navigation (`spatialNav.ts`) are implemented and verified in tests and simulation.
 - **Motion Performance & Browser Compatibility (Unverified)**: FPS under 4x CPU throttle and Safari/TV behaviour unverified.
 - **Smart TV Keycodes & Browser Performance (Unverified)**: Real physical Tizen and webOS device keycode reception, input latency, and low-end TV browser performance remain unverified on hardware (tested via emulation and test suites).
-- **Stray Digit Overlay Transient Glitch**: A stray digit overlay ('# 6 / CHANNEL 6') was seen once transiently after sending ArrowLeft x2 + Enter via browser automation; investigate and resolve in Phase 8.
+- **Stray Digit Overlay Transient Glitch (Not Reproduced / Closed)**: The earlier transient glitch ('# 6 / CHANNEL 6' after ArrowLeft x2 + Enter via browser automation) was investigated and not reproduced during Phase 8 testing.
+- **Mobile Device Behavior & Haptics (Unverified)**: Real physical iOS Safari and Android Chrome touch gesture performance, native haptics (`navigator.vibrate`), and orientation change jitter/aspect ratio resizing during active live HLS playback remain unverified on physical hardware (verified in test suites and responsive viewport emulations down to 320px).
+- **Origin-wide `?ui=` Override Persistence**: The `?ui=` query parameter override is persisted in `localStorage` under key `'ui'` per origin. Consequently, a desktop browser navigated to `?ui=mobile` or `?ui=tv` will stay in mobile/tv mode across page visits until explicitly cleared or overridden via `?ui=desktop`.
+
 

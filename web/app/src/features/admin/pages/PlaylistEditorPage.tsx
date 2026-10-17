@@ -4,6 +4,7 @@ import {
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -80,13 +81,13 @@ function SortableItem({
         isDragging ? 'border-[#0A84FF] shadow-2xl bg-[#22222A]' : ''
       }`}
     >
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button
           type="button"
           {...attributes}
           {...listeners}
           aria-label="Reorder item"
-          className="cursor-grab touch-none p-1 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] rounded"
+          className="cursor-grab touch-none flex min-h-[44px] min-w-[44px] items-center justify-center p-1 text-neutral-500 hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF] rounded"
         >
           <GripVertical className="h-4 w-4" />
         </button>
@@ -210,6 +211,12 @@ export function PlaylistEditorPage() {
         distance: 5,
       },
     }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
@@ -301,7 +308,7 @@ export function PlaylistEditorPage() {
                 {channel?.name || t('playlist_editor_title')}
               </h2>
             </div>
-            <div className="mt-1 flex items-center gap-3 text-xs text-neutral-400">
+            <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-neutral-400">
               <span className="flex items-center gap-1 font-mono">
                 <Clock className="h-3.5 w-3.5 text-neutral-500" />
                 {t('total_duration')}: {formatDuration(totalDuration, true)}
@@ -321,7 +328,7 @@ export function PlaylistEditorPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 self-end lg:self-auto">
+        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
           <button
             type="button"
             onClick={handleRevert}

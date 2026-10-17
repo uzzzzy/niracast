@@ -22,6 +22,7 @@ import {
 } from '../features/viewer/volumePersistence';
 import { api } from '../lib/api';
 import { useUiProfile } from '../lib/device';
+import { useSwipeGesture } from '../lib/gestures';
 import { t } from '../lib/i18n';
 import { useMotionMode } from '../lib/motion/mode';
 import { normalizeRemoteKey, registerTizenKeys } from '../lib/remoteKeys';
@@ -32,11 +33,31 @@ export default function ViewerPage() {
   const navigate = useNavigate();
   const uiProfile = useUiProfile();
   const isTv = uiProfile === 'tv';
+  const isMobile = uiProfile === 'mobile';
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isFullscreenSupported = useMemo(() => {
+    if (typeof document === 'undefined') return false;
+    return Boolean(
+      document.fullscreenEnabled ||
+        // @ts-expect-error vendor prefix
+        document.webkitFullscreenEnabled,
+    );
+  }, []);
+
+  const isPipSupported = useMemo(() => {
+    if (typeof document === 'undefined') return false;
+    return Boolean(
+      document.pictureInPictureEnabled ||
+        (videoEl &&
+          typeof (videoEl as unknown as { webkitSetPresentationMode?: unknown })
+            .webkitSetPresentationMode === 'function'),
+    );
+  }, [videoEl]);
 
   const handleVideoRef = useCallback((node: HTMLVideoElement | null) => {
     videoRef.current = node;
@@ -400,6 +421,37 @@ export default function ViewerPage() {
   const spatialNavEnabled = isTv && (isHudVisible || anyPanelOpen);
   const { focusGroup } = useSpatialNav(containerRef, spatialNavEnabled);
 
+  // Touch and swipe gestures (active on mobile and non-TV pointer devices)
+  useSwipeGesture(containerRef, {
+    enabled: !isTv,
+    threshold: 50,
+    minVelocity: 0.2,
+    onSwipeUp: () => {
+      if (anyPanelOpen) return;
+      navigateChannelRelative(1);
+    },
+    onSwipeDown: () => {
+      if (anyPanelOpen) return;
+      navigateChannelRelative(-1);
+    },
+    onTap: () => {
+      setIsHudVisible((prev) => !prev);
+      resetHudTimer();
+    },
+    onDoubleTap: ({ clientX }) => {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const width = rect?.width ?? window.innerWidth;
+      const left = rect?.left ?? 0;
+      const isLeftHalf = clientX < left + width / 2;
+      if (isLeftHalf) {
+        toggleMute();
+        showVolumeToast(!isMuted ? t('muted_chip') : t('unmuted_chip'));
+      } else if (isFullscreenSupported) {
+        toggleFullscreen();
+      }
+    },
+  });
+
   // Remote and Keyboard Control Handler
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -689,7 +741,7 @@ export default function ViewerPage() {
       ref={containerRef}
       onPointerMove={resetHudTimer}
       onPointerDown={resetHudTimer}
-      className={`fixed inset-0 overflow-hidden bg-black select-none ${
+      className={`fixed inset-0 h-[100dvh] w-full overflow-hidden bg-black select-none ${
         isTv ? 'cursor-none' : isHudVisible ? 'cursor-default' : 'cursor-none'
       }`}
     >
@@ -707,6 +759,7 @@ export default function ViewerPage() {
         <video
           ref={handleVideoRef}
           playsInline
+          webkit-playsinline="true"
           className="h-full w-full object-contain"
           aria-label={channel.name}
         >
@@ -800,6 +853,9 @@ export default function ViewerPage() {
         isFullscreen={isFullscreen}
         needsUnmute={needsUnmute}
         isTv={isTv}
+        isMobile={isMobile}
+        isFullscreenSupported={isFullscreenSupported}
+        isPipSupported={isPipSupported}
         onToggleMute={toggleMute}
         onVolumeChange={handleVolumeChange}
         onToggleFullscreen={toggleFullscreen}
@@ -822,7 +878,7 @@ export default function ViewerPage() {
         onUnmuteTap={handleUnmuteTap}
       />
 
-      {/* Channel Switcher: Left Rail for TV, Right Drawer for Desktop */}
+      {/* Channel Switcher: Left Rail for TV, Right Drawer / Bottom Sheet for Mobile & Desktop */}
       {isTv ? (
         <ChannelRailTv
           isOpen={isChannelsOpen}
@@ -838,6 +894,7 @@ export default function ViewerPage() {
           channels={channels}
           currentChannelId={channel.id}
           onSelectChannel={navigateToChannel}
+          isMobile={isMobile}
         />
       )}
 

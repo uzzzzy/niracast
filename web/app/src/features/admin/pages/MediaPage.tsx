@@ -213,10 +213,10 @@ export function MediaPage() {
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#16161B] shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-[#F5F5F7]">
-              <thead className="border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+        <div className="overflow-hidden md:rounded-2xl md:border md:border-white/10 md:bg-[#16161B] md:shadow-lg">
+          <div className="w-full">
+            <table className="w-full text-left text-sm text-[#F5F5F7] block md:table">
+              <thead className="hidden md:table-header-group border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
                 <tr>
                   <th scope="col" className="px-6 py-3.5">
                     {t('col_filename')}
@@ -235,32 +235,40 @@ export function MediaPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 font-mono text-xs">
+              <tbody className="divide-y divide-white/5 font-mono text-xs block md:table-row-group space-y-3 md:space-y-0">
                 {processedMedia.map((file) => (
-                  <tr key={file.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 font-sans font-medium text-white min-w-[200px]">
+                  <tr
+                    key={file.id}
+                    className="block md:table-row rounded-2xl border border-white/10 bg-[#16161B] md:border-0 md:bg-transparent p-4 md:p-0 shadow-sm md:shadow-none hover:bg-white/[0.02] transition-colors"
+                  >
+                    <td className="block md:table-cell px-0 py-1.5 md:px-6 md:py-4 font-sans font-medium text-white min-w-0 md:min-w-[200px]">
                       <div className="flex items-center gap-2.5">
                         <Film className="h-4 w-4 text-[#0A84FF] shrink-0" />
-                        <span className="truncate max-w-sm" title={file.filename}>
+                        <span className="truncate max-w-xs md:max-w-sm" title={file.filename}>
                           {file.filename}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-neutral-300">
+                    <td className="inline-block md:table-cell px-0 py-1 md:px-6 md:py-4 text-neutral-300 pr-3">
+                      <span className="md:hidden text-neutral-500 font-sans text-[11px] mr-1">
+                        {t('col_duration')}:{' '}
+                      </span>
                       {formatDuration(file.duration_sec)}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="inline-block md:table-cell px-0 py-1 md:px-6 md:py-4 pr-3">
                       <span className="rounded bg-white/5 px-2 py-0.5 uppercase text-neutral-300 border border-white/10">
                         {file.codec_video || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="inline-block md:table-cell px-0 py-1 md:px-6 md:py-4 pr-3">
                       <span className="rounded bg-white/5 px-2 py-0.5 uppercase text-neutral-300 border border-white/10">
                         {file.codec_audio || '-'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-neutral-300">
-                      {file.width > 0 ? `${file.width}x${file.height}` : '-'}
+                    <td className="inline-block md:table-cell px-0 py-1 md:px-6 md:py-4 text-neutral-300">
+                      <span className="rounded bg-white/5 px-2 py-0.5 text-neutral-300 border border-white/10">
+                        {file.width > 0 ? `${file.width}x${file.height}` : '-'}
+                      </span>
                     </td>
                   </tr>
                 ))}

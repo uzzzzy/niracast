@@ -60,7 +60,7 @@
 | 5 | `feature/cms-studio` | CMS dashboard: media file library viewer, drag-and-drop playlist reordering, visual schedule planner, and live status monitor. | **DONE**: Operator can reorder channel playlist via drag-and-drop, advance live track via skip, manage channels/media, and inspect real-time SSE playout. |
 | 6 | `feature/motion-system` | Physics spring animation tokens, View Transitions integration, layout morphing, and lite-motion fallback toggle. | **DONE**: Motion tokens, full/lite/reduced modes, admin AnimatePresence route transitions, and CSS/WAAPI viewer channel transitions operational. |
 | 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | **DONE**: In-house zero-dependency spatial nav, remote key map (Tizen/webOS/Android TV), TV channel rail, numeric direct jump, volume persistence, and TV profile detection verified. |
-| 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | Web app functions responsively on standard mobile screen sizes without horizontal clipping. |
+| 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | **DONE**: Mobile profile detection (`?ui=mobile`), pure swipe gesture engine, bottom sheets for channels and EPG, mobile admin navigation bar, responsive stacked tables, and touch drag sensor for playlist reordering verified. All roadmap phases 1-8 complete. |
 
 ## Future Plan (not yet scheduled)
 

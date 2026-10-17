@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import Hls from 'hls.js';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -453,5 +453,106 @@ describe('TV Mode ViewerPage', () => {
     expect(screen.getByText(t('no_such_channel'))).toBeInTheDocument();
 
     vi.useRealTimers();
+  });
+});
+
+describe('Mobile Mode ViewerPage (?ui=mobile)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('lang', 'id');
+    localStorage.setItem('ui', 'mobile');
+    mockHlsInstances = [];
+    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.pause = vi.fn();
+    window.HTMLMediaElement.prototype.load = vi.fn();
+
+    vi.spyOn(apiModule.api, 'getChannels').mockResolvedValue(mockChannels);
+    vi.spyOn(apiModule.api, 'getChannel').mockResolvedValue(mockChannels[0]);
+    vi.spyOn(apiModule.api, 'getChannelStatus').mockResolvedValue(mockStatusPlaying);
+    vi.spyOn(apiModule.api, 'getEpg').mockResolvedValue(mockEpg);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+    delete document.documentElement.dataset.ui;
+    vi.restoreAllMocks();
+  });
+
+  it('sets data-ui="mobile" attribute on document.documentElement via useUiProfile', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+    expect(document.documentElement.dataset.ui).toBe('mobile');
+  });
+
+  it('opens channel drawer as bottom sheet with drag handle and closes it', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    // Open Channels bottom sheet
+    const channelsBtn = screen.getByRole('button', { name: new RegExp(t('channels'), 'i') });
+    fireEvent.click(channelsBtn);
+
+    const sheet = screen.getByRole('dialog', { name: t('channels') });
+    expect(sheet).toBeInTheDocument();
+
+    // Verify drag handle is present
+    const dragHandle = within(sheet).getByLabelText(t('drag_handle'));
+    expect(dragHandle).toBeInTheDocument();
+
+    // Close via close button
+    const closeBtn = within(sheet).getByRole('button', { name: t('close') });
+    fireEvent.click(closeBtn);
+
+    expect(sheet).toHaveClass('pointer-events-none');
+  });
+
+  it('opens program guide bottom sheet with drag handle and closes it', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    // Open Program Guide bottom sheet
+    const guideBtn = screen.getByRole('button', { name: new RegExp(t('program_guide'), 'i') });
+    fireEvent.click(guideBtn);
+
+    const sheet = screen.getByRole('dialog', { name: t('program_guide') });
+    expect(sheet).toBeInTheDocument();
+
+    const dragHandle = within(sheet).getByLabelText(t('drag_handle'));
+    expect(dragHandle).toBeInTheDocument();
+
+    const closeBtn = within(sheet).getByRole('button', { name: t('close') });
+    fireEvent.click(closeBtn);
+
+    expect(sheet).toHaveClass('pointer-events-none');
+  });
+
+  it('switches channel on vertical swipe up using pointer events', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    const container = screen
+      .getByRole('heading', { level: 1, name: 'Retro Cinema' })
+      .closest('div.fixed.inset-0');
+    expect(container).toBeInTheDocument();
+    if (!container) throw new Error('Container not found');
+
+    // Simulate pointer swipe up: clientY 400 -> 150
+    act(() => {
+      container.dispatchEvent(
+        new PointerEvent('pointerdown', { clientX: 200, clientY: 400, isPrimary: true }),
+      );
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 200, clientY: 150, isPrimary: true }),
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { clientX: 200, clientY: 150, isPrimary: true }),
+      );
+    });
+
+    expect(await screen.findByText('Navigated to Channel 2')).toBeInTheDocument();
   });
 });

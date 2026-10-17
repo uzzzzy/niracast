@@ -5,6 +5,8 @@ export type UiProfile = 'tv' | 'mobile' | 'desktop';
 export interface ViewportDimensions {
   width: number;
   height: number;
+  pointerCoarse?: boolean;
+  hasTouch?: boolean;
 }
 
 export interface StorageLike {
@@ -22,19 +24,27 @@ const TV_UA_REGEX =
   /(SMART-TV|SmartTV|Tizen|Web0S|WebOS|NetCast|HbbTV|Android TV|AFT[A-Za-z0-9_]*|BRAVIA|Philips|Vestel|Hisense|VIDAA|CrKey|Roku|PlayStation|Xbox|AppleTV)/i;
 
 /**
+ * Regex matching mobile phone and tablet user agents:
+ * iPhone, iPad, iPod, Android (phones/tablets), Mobile, Tablet.
+ */
+const MOBILE_UA_REGEX = /(iPhone|iPad|iPod|Android|Mobile|Tablet)/i;
+
+/**
  * Pure function to detect the active UI profile ('tv' | 'mobile' | 'desktop').
  *
  * Precedence:
- * 1. Query parameter ?ui=tv or ?ui=desktop (persists to storage when present).
- * 2. Stored preference in storage ('ui' = 'tv' | 'desktop').
- * 3. User agent matching Smart TV families.
- * 4. Fallback to 'desktop' (Phase 8 will add 'mobile').
+ * 1. Query parameter ?ui=tv | ?ui=desktop | ?ui=mobile (persists to storage when present).
+ * 2. Stored preference in storage ('ui' = 'tv' | 'desktop' | 'mobile').
+ * 3. User agent matching Smart TV families (TV still wins).
+ * 4. User agent matching mobile phones / tablets.
+ * 5. Coarse pointer + width < 768, touch, or iPad on desktop UA with touch.
+ * 6. Fallback to 'desktop'.
  */
 export function detectUiProfile(
   userAgent?: string,
   search?: string,
   storage?: StorageLike | null,
-  _viewport?: ViewportDimensions,
+  viewport?: ViewportDimensions,
 ): UiProfile {
   // 1. Query parameter (?ui=tv | ?ui=desktop | ?ui=mobile)
   if (typeof search === 'string' && search.length > 0) {
@@ -66,12 +76,11 @@ export function detectUiProfile(
       } catch {
         // Ignore storage write errors
       }
-      // Phase 8 will add mobile; design type as 'tv' | 'mobile' | 'desktop', return desktop for now
-      return 'desktop';
+      return 'mobile';
     }
   }
 
-  // 2. Storage preference ('ui' = 'tv' | 'desktop')
+  // 2. Storage preference ('ui' = 'tv' | 'desktop' | 'mobile')
   if (storage) {
     try {
       const stored = storage.getItem('ui');
@@ -81,19 +90,51 @@ export function detectUiProfile(
       if (stored === 'desktop') {
         return 'desktop';
       }
-      // 'mobile' stored falls back to 'desktop' in Phase 7
+      if (stored === 'mobile') {
+        return 'mobile';
+      }
     } catch {
       // Ignore storage read errors
     }
   }
 
-  // 3. Smart TV User Agent inspection
+  // 3. Smart TV User Agent inspection (TV still wins)
   const effectiveUa = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
   if (effectiveUa && TV_UA_REGEX.test(effectiveUa)) {
     return 'tv';
   }
 
-  // 4. Default fallback
+  // 4. Mobile User Agent inspection (phones and tablets)
+  if (effectiveUa && MOBILE_UA_REGEX.test(effectiveUa)) {
+    return 'mobile';
+  }
+
+  // 5. Coarse pointer + width < 768, touch, or iPad on desktop UA with touch
+  const width = viewport?.width ?? (typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const pointerCoarse =
+    viewport?.pointerCoarse ??
+    (typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(pointer: coarse)').matches);
+  const hasTouch =
+    viewport?.hasTouch ??
+    (typeof navigator !== 'undefined' &&
+      (navigator.maxTouchPoints > 0 ||
+        (typeof window !== 'undefined' && 'ontouchstart' in window)));
+
+  // iPad desktop UA override (Macintosh + touch points > 1)
+  if (
+    effectiveUa.includes('Macintosh') &&
+    (viewport?.hasTouch || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1))
+  ) {
+    return 'mobile';
+  }
+
+  if ((pointerCoarse || hasTouch) && width < 768) {
+    return 'mobile';
+  }
+
+  // 6. Default fallback
   return 'desktop';
 }
 
@@ -111,6 +152,22 @@ export function applyUiProfile(profile: UiProfile): void {
 }
 
 /**
+ * Helper to get current browser viewport and input info.
+ */
+function getBrowserViewport(): ViewportDimensions | undefined {
+  if (typeof window === 'undefined') return undefined;
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    pointerCoarse:
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
+    hasTouch:
+      typeof navigator !== 'undefined' &&
+      (navigator.maxTouchPoints > 0 || 'ontouchstart' in window),
+  };
+}
+
+/**
  * React hook to detect and apply the UI profile.
  * Sets document.documentElement.dataset.ui and returns the profile.
  */
@@ -119,10 +176,7 @@ export function useUiProfile(): UiProfile {
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     const search = typeof window !== 'undefined' ? window.location.search : '';
     const storage = typeof localStorage !== 'undefined' ? localStorage : null;
-    const viewport =
-      typeof window !== 'undefined'
-        ? { width: window.innerWidth, height: window.innerHeight }
-        : undefined;
+    const viewport = getBrowserViewport();
 
     const detected = detectUiProfile(ua, search, storage, viewport);
     applyUiProfile(detected);
@@ -132,16 +186,31 @@ export function useUiProfile(): UiProfile {
   useEffect(() => {
     applyUiProfile(profile);
 
+    const updateProfile = () => {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const storage = typeof localStorage !== 'undefined' ? localStorage : null;
+      const viewport = getBrowserViewport();
+
+      const next = detectUiProfile(ua, search, storage, viewport);
+      setProfile(next);
+      applyUiProfile(next);
+    };
+
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'ui') {
-        const next = detectUiProfile(navigator.userAgent, window.location.search, localStorage);
-        setProfile(next);
-        applyUiProfile(next);
+        updateProfile();
       }
     };
 
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    window.addEventListener('resize', updateProfile);
+    window.addEventListener('orientationchange', updateProfile);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('resize', updateProfile);
+      window.removeEventListener('orientationchange', updateProfile);
+    };
   }, [profile]);
 
   return profile;
