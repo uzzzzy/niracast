@@ -116,6 +116,7 @@ func main() {
 	statusH.register(mux)
 	mux.HandleFunc("GET /api/v1/media", listMedia(conn))
 	hls.register(mux)
+	// spaFS is rooted at app/dist/app inside the embedded web.Dist FS.
 	spaFS, err := web.SPA()
 	if err != nil {
 		log.Fatalf("init spa fs: %v", err)

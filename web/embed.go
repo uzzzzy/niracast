@@ -10,7 +10,7 @@ import (
 //go:embed all:app/dist
 var Dist embed.FS
 
-// SPA returns an fs.FS sub-filesystem rooted at app/dist.
+// SPA returns an fs.FS sub-filesystem rooted at app/dist/app.
 func SPA() (fs.FS, error) {
-	return fs.Sub(Dist, "app/dist")
+	return fs.Sub(Dist, "app/dist/app")
 }

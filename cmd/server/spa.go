@@ -19,7 +19,8 @@ func init() {
 	_ = mime.AddExtensionType(".svg", "image/svg+xml")
 }
 
-// newSPAHandler returns an http.Handler serving files from fsys with SPA fallback.
+// newSPAHandler returns an http.Handler serving files from fsys (typically
+// web/app/dist/app via web.SPA()) with SPA fallback.
 func newSPAHandler(fsys fs.FS) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cleanPath := path.Clean(r.URL.Path)

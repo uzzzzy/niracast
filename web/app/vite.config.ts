@@ -13,7 +13,8 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist',
+    outDir: 'dist/app',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

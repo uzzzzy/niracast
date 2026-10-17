@@ -12,7 +12,7 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-COPY --from=web /web/app/dist ./web/app/dist
+COPY --from=web /web/app/dist/app ./web/app/dist/app
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/tv-stream ./cmd/server
 
 FROM alpine:3.21

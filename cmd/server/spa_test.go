@@ -121,6 +121,8 @@ func TestSPAMissingFileWithExtension(t *testing.T) {
 	}
 }
 
+// TestSPAUnbuiltDist verifies that when dist/app/index.html is missing
+// (e.g. unbuilt frontend), the SPA handler returns 503 with the 'pnpm build' hint.
 func TestSPAUnbuiltDist(t *testing.T) {
 	fsys := fstest.MapFS{
 		".gitkeep": &fstest.MapFile{Data: []byte("")},
