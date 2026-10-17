@@ -2,6 +2,7 @@
 /media/
 /data/
 /transcode/
+sample/
 
 # Database files
 *.db

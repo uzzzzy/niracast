@@ -11,3 +11,7 @@
 - For every analysis task or any work that requires reading project context (code review, codebase exploration, log or diff reading, research), use `agy` as the worker: `agy -p "<self-contained prompt>" --mode plan --model gemini-3.8-flash-high --print-timeout 300s --output-format text`.
 - Claude reads only agy's summary, then spot-checks the key claims itself (e.g. open the cited `file:line`) before relying on them.
 - Use the `--mode plan` (read-only) so analysis never edits files.
+
+## agy model fallback
+- If an `agy` run fails with a quota or rate-limit error (e.g. `RESOURCE_EXHAUSTED` / 429 "Individual quota reached"), switch to another model from `agy models` and re-run; do not wait for the quota reset. Order: `claude-sonnet-4-6` -> `gemini-3.8-flash-high` -> `gemini-3.8-flash-medium` -> `gpt-oss-120b-medium`.
+- Check `agy`'s stderr and the end of its output for `AGY_ERROR` after every run, since a quota stop can end with exit code 0.

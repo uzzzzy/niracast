@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,12 +18,13 @@ import (
 // position) and serves its HLS output. Every request counts as a viewer ping
 // so the idle reaper keeps active channels alive.
 type hlsHandler struct {
-	ctx      context.Context // server lifetime; FFmpeg must outlive a single request
-	db       *sql.DB
-	calc     timeline.TimelineCalculator
-	ctrl     stream.ProcessController
-	sessions *stream.SessionManager
-	root     string
+	ctx        context.Context // server lifetime; FFmpeg must outlive a single request
+	db         *sql.DB
+	calc       timeline.TimelineCalculator
+	ctrl       stream.ProcessController
+	sessions   *stream.SessionManager
+	supervisor *stream.Supervisor
+	root       string
 }
 
 func (h *hlsHandler) register(mux *http.ServeMux) {
@@ -34,36 +34,53 @@ func (h *hlsHandler) register(mux *http.ServeMux) {
 
 func (h *hlsHandler) dir(id int64) string { return filepath.Join(h.root, strconv.FormatInt(id, 10)) }
 
+// channelExists returns true if the channel row is present in the database.
+func (h *hlsHandler) channelExists(id int64) bool {
+	var n int
+	err := h.db.QueryRow(`SELECT COUNT(*) FROM channels WHERE id = ?`, id).Scan(&n)
+	return err == nil && n > 0
+}
+
 func (h *hlsHandler) manifest(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	h.sessions.RegisterPing(id)
 
-	if !h.ctrl.IsRunning(id) {
-		if err := h.start(id); err != nil {
-			if errors.Is(err, timeline.ErrEmptyPlaylist) {
-				http.Error(w, "channel has no playlist", http.StatusNotFound)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// 404 only when the channel row does not exist.
+	if !h.channelExists(id) {
+		http.NotFound(w, r)
+		return
 	}
 
+	// Register viewer and hand-off to the supervisor (idempotent).
+	h.sessions.RegisterPing(id)
+	h.supervisor.Ensure(h.ctx, id)
+
+	// Wait up to 20 s for live.m3u8 to appear.
 	path := filepath.Join(h.dir(id), "live.m3u8")
-	deadline := time.Now().Add(20 * time.Second)
+	timer := time.NewTimer(20 * time.Second)
+	defer timer.Stop()
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
 		if _, err := os.Stat(path); err == nil {
 			break
 		}
-		if time.Now().After(deadline) || r.Context().Err() != nil {
+		select {
+		case <-timer.C:
 			http.Error(w, "stream not ready", http.StatusServiceUnavailable)
 			return
+		case <-r.Context().Done():
+			http.Error(w, "request cancelled", http.StatusServiceUnavailable)
+			return
+		case <-h.ctx.Done():
+			http.Error(w, "server shutting down", http.StatusServiceUnavailable)
+			return
+		case <-ticker.C:
 		}
-		time.Sleep(250 * time.Millisecond)
 	}
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -77,30 +94,21 @@ func (h *hlsHandler) segment(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	if !h.channelExists(id) {
+		http.NotFound(w, r)
+		return
+	}
 	h.sessions.RegisterPing(id)
 	w.Header().Set("Content-Type", "video/mp2t")
 	http.ServeFile(w, r, filepath.Join(h.dir(id), file))
 }
 
-func (h *hlsHandler) start(id int64) error {
-	item, err := h.calc.GetCurrentPlayout(id, time.Now())
-	if err != nil {
-		return err
+// codecLookupFunc returns a CodecLookup backed by the media_files table.
+func codecLookupFunc(db *sql.DB) stream.CodecLookup {
+	return func(mediaID int64) ingest.MediaMetadata {
+		var vc, ac sql.NullString
+		_ = db.QueryRow(`SELECT codec_video, codec_audio FROM media_files WHERE id = ?`, mediaID).
+			Scan(&vc, &ac)
+		return ingest.MediaMetadata{VideoCodec: vc.String, AudioCodec: ac.String}
 	}
-	var meta ingest.MediaMetadata
-	var vc, ac sql.NullString
-	err = h.db.QueryRow(`SELECT codec_video, codec_audio FROM media_files WHERE id = ?`, item.MediaID).Scan(&vc, &ac)
-	if err == nil {
-		meta = ingest.MediaMetadata{VideoCodec: vc.String, AudioCodec: ac.String}
-	}
-	_ = os.RemoveAll(h.dir(id)) // drop stale segments from a previous run
-	prof := stream.OptimizePipeline(&meta)
-	err = h.ctrl.StartStream(h.ctx, stream.StreamConfig{
-		ChannelID:   id,
-		SourcePath:  item.FilePath,
-		SeekSeconds: item.SeekSeconds,
-		OutputDir:   h.dir(id),
-		CopyCodec:   prof.CanCopyVideo && prof.CanCopyAudio,
-	})
-	return err
 }

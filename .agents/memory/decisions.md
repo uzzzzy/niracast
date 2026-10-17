@@ -12,4 +12,10 @@
   - Viewer device priority: Desktop/Web > Smart TV (10-foot D-pad) > Mobile.
   - Zero-CPU idle stream: pre-encode static card (`siaran_segera_kembali.jpg`) once with silent AAC; loop via `-stream_loop -1 -re -c copy`. Reaped after 60s idle (not 24/7).
   - Auth & Live Status: Env admin password, HTTP-only cookie, CSRF; SSE at `/api/v1/events` for real-time CMS playout tracking. Deferred browser file uploads (retain `/media` volume ingest).
+- **Phase 1 Playout Supervisor & FFmpeg Flags**:
+  - Correct HLS discontinuity flag: The FFmpeg flag is `discont_start` (not `discontinuity_start`).
+  - Infinite live manifests: `omit_endlist` is always set in `-hls_flags` so live broadcast manifests never terminate with `#EXT-X-ENDLIST`.
+  - Explicit stream mapping: `-map 0:v:0 -map 0:a:0? -sn -dn` is strictly used because real MKV containers frequently carry ASS subtitles and font attachments that break HLS muxing.
+  - Idle clip 2s keyframes: Idle clip pre-encoding forces keyframes every 2s so the initial HLS manifest appears in ~2s.
+  - Zero-CPU idle looping: Idle channels are copy-looped (`-stream_loop -1 -re -c copy`), consuming ~0 CPU overhead.
 

@@ -29,6 +29,12 @@ func main() {
 	mediaDir := env("MEDIA_DIR", "/media")
 	transcodeDir := env("TRANSCODE_DIR", "/transcode")
 	staticDir := env("STATIC_DIR", "web/static")
+	ffmpegPath := env("FFMPEG_PATH", "ffmpeg")
+
+	// Idle stream assets: a pre-encoded MP4 clip generated once from a JPEG
+	// image. At runtime FFmpeg simply copy-loops the clip — near-zero CPU.
+	idleImage := env("IDLE_IMAGE", "assets/filler/siaran_segera_kembali.jpg")
+	idleClip := env("IDLE_CLIP", "/data/idle/idle.mp4")
 
 	conn, err := db.InitDB(dbPath)
 	if err != nil {
@@ -41,18 +47,38 @@ func main() {
 
 	go scanLoop(ctx, conn, mediaDir, 5*time.Minute)
 
-	ctrl := stream.NewFFmpegController(env("FFMPEG_PATH", "ffmpeg"))
+	ctrl := stream.NewFFmpegController(ffmpegPath)
 	sessions := stream.NewSessionManager(ctrl, transcodeDir+"/channels")
 	sessions.StartReaperLoop(10 * time.Second)
 	defer sessions.StopReaperLoop()
 
+	// Pre-encode the idle clip at startup. If encoding fails (e.g. the image
+	// asset is missing from the dev environment), log a warning and continue;
+	// the supervisor falls back gracefully to a stream start error.
+	if _, err := stream.EnsureIdleClip(ffmpegPath, idleImage, idleClip); err != nil {
+		log.Printf("warning: idle clip not generated: %v", err)
+	} else {
+		log.Printf("idle clip ready: %s", idleClip)
+	}
+
+	calc := timeline.NewDBCalculator(conn)
+	supervisor := stream.NewSupervisor(
+		calc,
+		ctrl,
+		sessions,
+		codecLookupFunc(conn),
+		idleClip,
+		transcodeDir+"/channels",
+	)
+
 	hls := &hlsHandler{
-		ctx:      ctx,
-		db:       conn,
-		calc:     timeline.NewDBCalculator(conn),
-		ctrl:     ctrl,
-		sessions: sessions,
-		root:     transcodeDir + "/channels",
+		ctx:        ctx,
+		db:         conn,
+		calc:       calc,
+		ctrl:       ctrl,
+		sessions:   sessions,
+		supervisor: supervisor,
+		root:       transcodeDir + "/channels",
 	}
 
 	mux := http.NewServeMux()
