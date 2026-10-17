@@ -28,5 +28,14 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Legacy dashboard update: Added temporary login modal and session handling to vanilla UI until Phase 5.
   - Verified: Unit tests, route matrix, and E2E HTTP integration tests passed; live `curl` test validated login/logout, CSRF rejection, 429 rate limiting, protected CMS gate, real-time SSE event reception, JSON status inspection, and timeline skip; Docker container run validated with zero regressions.
 - **Future Plan Formalized**: Documented unscheduled roadmap proposals in `docs/ROADMAP.md` covering scheduled TV-style broadcast programming (F1) and real-time HLS viewer analytics (F2). Updated architectural decisions and known gaps.
+- **Phase 3 Modern Frontend Scaffold & SPA Delivery Completed** (`feature/frontend-scaffold`):
+  - Initialized modern React 19 SPA in `web/app` with Vite 8, TypeScript, Tailwind CSS v4, React Router 8, TanStack Query, Biome, and Vitest.
+  - Implemented client-side routing for `/`, `/watch/:id`, and `/admin/*` with code-split lazy chunk loading per route.
+  - Added channel detail REST endpoint `GET /api/v1/channels/{id}`.
+  - Implemented SPA fallback handler `cmd/server/spa.go` backed by `web/embed.go` (`go:embed all:app/dist`, `SPA()` sub-mounted to `app/dist/app`), serving `/assets` with immutable caching, `index.html` with no-cache, 503 fallback when not built, JSON 404 for `/api`, and bypassing `/channels`, `/iptv`, and `/static`.
+  - Configured multi-stage `Dockerfile` with `node:22-alpine` web stage using BuildKit pnpm store cache.
+  - Isolated Vite build output to `web/app/dist/app` to preserve tracked `web/app/dist/.gitkeep` placeholder across Vite `emptyOutDir`, ensuring clean git clones can build Go binaries without Node.js.
+  - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test`, `pnpm build` passed; all Go unit/integration tests passed; clean-clone `go build` passed without Node; multi-stage Docker build passed (211MB image); live SPA routing and browser rendering of `/watch/1` verified with zero regressions. Legacy dashboard remains accessible at `/static/`.
+
 
 
