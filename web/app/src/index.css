@@ -260,3 +260,99 @@ html[data-motion="reduced"] dialog[open] {
     transition-duration: 100ms !important;
   }
 }
+
+/* Shake animation for invalid digit input: transform only */
+@keyframes shake-anim {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-14px);
+  }
+  40%,
+  80% {
+    transform: translateX(14px);
+  }
+}
+
+.animate-shake {
+  animation: shake-anim 0.4s ease-in-out;
+}
+
+/*
+ * TV Mode Styling (html[data-ui="tv"])
+ * 10-foot viewing experience:
+ * - Hidden cursor
+ * - 5% safe-area overscan padding
+ * - High-contrast focus rings: 4px solid white + glow + scale 1.06 (via transform only)
+ * - Large touch/pill targets (min 72px)
+ * - Base typography scaling via clamp(vw)
+ */
+html[data-ui="tv"],
+html[data-ui="tv"] * {
+  cursor: none !important;
+}
+
+html[data-ui="tv"] {
+  font-size: clamp(20px, 1.6vw, 32px);
+}
+
+/* TV Safe Area Padding (5% overscan) */
+html[data-ui="tv"] .tv-safe-area {
+  padding-top: max(5vh, 40px);
+  padding-bottom: max(5vh, 40px);
+  padding-left: max(5vw, 48px);
+  padding-right: max(5vw, 48px);
+}
+
+/* Focus indicator for TV D-pad: 4px solid white + glow + scale 1.06 via transform */
+html[data-ui="tv"] button:focus-visible,
+html[data-ui="tv"] a:focus-visible,
+html[data-ui="tv"] input:focus-visible,
+html[data-ui="tv"] [tabindex="0"]:focus-visible,
+html[data-ui="tv"] [data-focusable]:focus-visible,
+html[data-ui="tv"] [data-focused="true"] {
+  outline: 4px solid #ffffff !important;
+  outline-offset: 3px !important;
+  box-shadow:
+    0 0 24px rgba(255, 255, 255, 0.8),
+    0 0 48px rgba(10, 132, 255, 0.45) !important;
+  transform: scale(1.06) !important;
+  transition-property: transform !important;
+  transition-timing-function: var(--ease-spring) !important;
+  transition-duration: var(--dur-normal) !important;
+  z-index: 40 !important;
+}
+
+/* Reduced motion disables the transform scale */
+html[data-motion="reduced"] html[data-ui="tv"] button:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] a:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] input:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [tabindex="0"]:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [data-focusable]:focus-visible,
+html[data-motion="reduced"] html[data-ui="tv"] [data-focused="true"] {
+  transform: none !important;
+}
+
+/* In TV mode, HUD buttons expand to large pills (min 72px tall) */
+html[data-ui="tv"] .tv-pill-button {
+  min-height: 72px;
+  min-width: 72px;
+  font-size: 1.15rem;
+}
+
+/* In TV mode, Idle Card is scaled up for 10-foot viewing */
+html[data-ui="tv"] [data-testid="idle-card"] {
+  padding: 1.5rem 2rem !important;
+  border-radius: 1.5rem !important;
+}
+
+html[data-ui="tv"] [data-testid="idle-card"] h2 {
+  font-size: 1.4rem !important;
+}
+
+html[data-ui="tv"] [data-testid="idle-card"] p {
+  font-size: 1rem !important;
+}

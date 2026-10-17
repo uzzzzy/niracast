@@ -28,6 +28,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
       role="dialog"
       aria-modal="true"
       aria-label={t('shortcuts_title')}
+      data-nav-group="shortcuts"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-spring"
     >
       {/* Backdrop button */}
@@ -47,6 +48,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
           <h2 className="text-base font-semibold">{t('shortcuts_title')}</h2>
           <button
             type="button"
+            data-focusable
             onClick={onClose}
             aria-label={t('close')}
             className="flex h-11 w-11 items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"

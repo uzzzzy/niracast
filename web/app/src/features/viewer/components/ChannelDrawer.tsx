@@ -38,6 +38,7 @@ export const ChannelDrawer: React.FC<ChannelDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={t('channels')}
+        data-nav-group="channels"
         className={`fixed top-0 right-0 bottom-0 z-50 flex w-80 max-w-[85vw] flex-col border-l border-white/10 bg-[#16161B]/95 p-5 shadow-2xl transition-spring reduced-motion-fade ${
           isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'
         }`}
@@ -49,6 +50,7 @@ export const ChannelDrawer: React.FC<ChannelDrawerProps> = ({
           </div>
           <button
             type="button"
+            data-focusable
             onClick={onClose}
             aria-label={t('close')}
             className="flex h-11 w-11 items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#0A84FF]"
@@ -64,6 +66,7 @@ export const ChannelDrawer: React.FC<ChannelDrawerProps> = ({
               <button
                 key={channel.id}
                 type="button"
+                data-focusable
                 onClick={() => {
                   onSelectChannel(channel.id);
                   onClose();

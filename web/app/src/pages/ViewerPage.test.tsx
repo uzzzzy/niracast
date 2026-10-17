@@ -292,3 +292,166 @@ describe('ViewerPage', () => {
     vi.useRealTimers();
   });
 });
+
+describe('TV Mode ViewerPage', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('lang', 'id');
+    localStorage.setItem('ui', 'tv');
+    mockHlsInstances = [];
+    window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+    window.HTMLMediaElement.prototype.pause = vi.fn();
+    window.HTMLMediaElement.prototype.load = vi.fn();
+
+    vi.spyOn(apiModule.api, 'getChannels').mockResolvedValue(mockChannels);
+    vi.spyOn(apiModule.api, 'getChannel').mockResolvedValue(mockChannels[0]);
+    vi.spyOn(apiModule.api, 'getChannelStatus').mockResolvedValue(mockStatusPlaying);
+    vi.spyOn(apiModule.api, 'getEpg').mockResolvedValue(mockEpg);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+    delete document.documentElement.dataset.ui;
+    vi.restoreAllMocks();
+  });
+
+  it('sets data-ui attribute on document.documentElement via useUiProfile', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+    expect(document.documentElement.dataset.ui).toBe('tv');
+  });
+
+  it('navigates to next channel on ArrowDown when HUD is not open', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(await screen.findByText('Navigated to Channel 2')).toBeInTheDocument();
+  });
+
+  it('increases volume on ArrowRight and shows volume toast', async () => {
+    localStorage.setItem('viewer.volume', '0.5');
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(screen.getByTestId('volume-toast')).toBeInTheDocument();
+    expect(localStorage.getItem('viewer.volume')).toBe('0.55');
+  });
+
+  it('opens HUD menu and lands focus on the first control on OK (Enter)', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    // Press OK (Enter)
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Enter' });
+    });
+
+    await new Promise((r) => setTimeout(r, 100));
+
+    const muteBtn = screen.getByRole('button', { name: new RegExp(t('mute'), 'i') });
+    expect(document.activeElement).toBe(muteBtn);
+  });
+
+  it('closes layers progressively with Back (shortcuts -> guide -> HUD menu)', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    // Open HUD first
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Enter' });
+    });
+    await new Promise((r) => setTimeout(r, 60));
+
+    // Open Guide
+    fireEvent.keyDown(window, { key: 'Guide' });
+    expect(screen.getByRole('dialog', { name: t('program_guide') })).toBeInTheDocument();
+
+    // Open Remote Legend via remote button
+    const legendBtn = screen.getByRole('button', {
+      name: new RegExp(t('remote_legend_title'), 'i'),
+    });
+    fireEvent.click(legendBtn);
+    expect(screen.getByRole('dialog', { name: t('remote_legend_title') })).toBeInTheDocument();
+
+    // 1st Back closes remote legend
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(
+      screen.queryByRole('dialog', { name: t('remote_legend_title') }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: t('program_guide') })).toBeInTheDocument();
+
+    // 2nd Back closes guide sheet
+    fireEvent.keyDown(window, { key: 'Escape' });
+    const guideSheet = screen.getByRole('dialog', { name: t('program_guide') });
+    expect(guideSheet).toHaveClass('translate-y-full');
+
+    // 3rd Back closes HUD
+    fireEvent.keyDown(window, { key: 'Escape' });
+    const hud = screen
+      .getByRole('dialog', { name: t('program_guide') })
+      .parentElement?.querySelector('.transition-hud');
+    expect(hud).toHaveClass('opacity-0');
+
+    // 4th Back when nothing is open: preventDefault called, stays on page
+    const backEvt = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+    window.dispatchEvent(backEvt);
+    expect(backEvt.defaultPrevented).toBe(true);
+  });
+
+  it('digit entry navigates to channel number after idle timeout (fake timers)', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    vi.useFakeTimers();
+
+    // Type 1, 0, 2
+    act(() => {
+      fireEvent.keyDown(window, { key: '1' });
+      fireEvent.keyDown(window, { key: '0' });
+      fireEvent.keyDown(window, { key: '2' });
+    });
+
+    const overlay = screen.getByTestId('digit-entry-overlay');
+    expect(overlay).toBeInTheDocument();
+    expect(overlay).toHaveTextContent('102');
+
+    // Advance 1.5s idle timer
+    act(() => {
+      vi.advanceTimersByTime(1600);
+    });
+
+    vi.useRealTimers();
+    expect(await screen.findByText('Navigated to Channel 2')).toBeInTheDocument();
+  });
+
+  it('unknown channel number shows error message and shakes', async () => {
+    renderViewer();
+    await screen.findByRole('heading', { level: 1, name: 'Retro Cinema' });
+
+    vi.useFakeTimers();
+
+    // Type 9, 9, 9 (non-existent channel)
+    act(() => {
+      fireEvent.keyDown(window, { key: '9' });
+      fireEvent.keyDown(window, { key: '9' });
+      fireEvent.keyDown(window, { key: '9' });
+    });
+
+    const overlay = screen.getByTestId('digit-entry-overlay');
+    expect(overlay).toBeInTheDocument();
+    expect(overlay).toHaveTextContent('999');
+
+    // Advance 1.5s idle timer -> commits and fails
+    act(() => {
+      vi.advanceTimersByTime(1600);
+    });
+
+    expect(screen.getByTestId('digit-error-message')).toBeInTheDocument();
+    expect(screen.getByText(t('no_such_channel'))).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+});
