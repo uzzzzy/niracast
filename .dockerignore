@@ -4,3 +4,8 @@
 /transcode
 /data
 *.md
+/sample
+node_modules
+web/app/node_modules
+web/app/dist
+*.exe

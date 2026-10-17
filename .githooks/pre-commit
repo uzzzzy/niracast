@@ -26,4 +26,11 @@ if ! go build ./...; then
   exit 1
 fi
 
+if [ -e "web/app/node_modules" ]; then
+  if ! (cd web/app && pnpm run check && pnpm run typecheck); then
+    echo "Error: Frontend checks failed." >&2
+    exit 1
+  fi
+fi
+
 exit 0

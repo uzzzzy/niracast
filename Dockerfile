@@ -1,9 +1,18 @@
 # syntax=docker/dockerfile:1
+FROM node:22-alpine AS web
+RUN corepack enable
+WORKDIR /web/app
+COPY web/app/package.json web/app/pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store pnpm install --frozen-lockfile
+COPY web/app ./
+RUN pnpm build
+
 FROM golang:1.27-alpine AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
+COPY --from=web /web/app/dist ./web/app/dist
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/tv-stream ./cmd/server
 
 FROM alpine:3.21
@@ -19,4 +28,3 @@ COPY --chown=app:app assets/filler /app/assets/filler
 USER app
 VOLUME ["/data", "/transcode", "/media"]
 ENTRYPOINT ["/app/tv-stream"]
-
