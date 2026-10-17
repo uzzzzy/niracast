@@ -1,6 +1,7 @@
 import { Calendar, Clock, X } from 'lucide-react';
 import type React from 'react';
 import type { EpgItem } from '../../../lib/api';
+import { useBottomSheetDrag } from '../../../lib/gestures';
 import { t } from '../../../lib/i18n';
 import { formatDuration, formatLocalTime } from '../utils';
 
@@ -17,6 +18,11 @@ export const ProgramGuideSheet: React.FC<ProgramGuideSheetProps> = ({
   items,
   channelName,
 }) => {
+  const { dragHandleProps, sheetStyle } = useBottomSheetDrag({
+    onClose,
+    enabled: isOpen,
+  });
+
   return (
     <>
       {/* Backdrop button */}
@@ -30,16 +36,27 @@ export const ProgramGuideSheet: React.FC<ProgramGuideSheetProps> = ({
         onClick={onClose}
       />
 
-      {/* Sheet */}
+      {/* Bottom Sheet */}
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={t('program_guide')}
         data-nav-group="guide"
-        className={`fixed bottom-0 left-0 right-0 z-50 flex max-h-[75vh] flex-col rounded-t-3xl border-t border-white/20 bg-[#16161B]/95 p-6 shadow-2xl transition-spring reduced-motion-fade ${
+        style={sheetStyle}
+        className={`fixed bottom-0 left-0 right-0 z-50 flex max-h-[75vh] flex-col rounded-t-3xl border-t border-white/20 bg-[#16161B]/95 p-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] shadow-2xl transition-spring reduced-motion-fade ${
           isOpen ? 'translate-y-0' : 'translate-y-full pointer-events-none'
         }`}
       >
+        {/* Drag handle */}
+        <button
+          type="button"
+          {...dragHandleProps}
+          aria-label={t('drag_handle')}
+          className="flex w-full justify-center -mt-3 pb-3 cursor-grab active:cursor-grabbing touch-none select-none bg-transparent border-0"
+        >
+          <div className="h-1.5 w-12 rounded-full bg-white/25 hover:bg-white/40 transition-colors" />
+        </button>
+
         <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div className="flex items-center gap-3 text-white">
             <Calendar className="h-6 w-6 text-[#0A84FF]" />
@@ -53,9 +70,9 @@ export const ProgramGuideSheet: React.FC<ProgramGuideSheetProps> = ({
             data-focusable
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-12 w-12 items-center justify-center rounded-2xl text-neutral-400 hover:text-white hover:bg-white/10 focus:outline-none"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-neutral-400 hover:text-white hover:bg-white/10 focus:outline-none"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 

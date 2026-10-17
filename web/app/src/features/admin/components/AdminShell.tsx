@@ -21,11 +21,13 @@ export function AdminShell({
   return (
     <AdminEventsProvider>
       <MotionProvider>
-        <div className="flex h-screen w-screen overflow-hidden bg-[#0B0B0E] text-[#F5F5F7] font-sans antialiased">
+        <div className="flex h-[100dvh] w-full max-w-[100vw] overflow-hidden bg-[#0B0B0E] text-[#F5F5F7] font-sans antialiased flex-col md:flex-row">
           <AdminSidebar firstChannelId={firstChannelId} />
           <div className="flex flex-1 flex-col overflow-hidden min-w-0">
             <AdminTopBar onLogout={onLogout} isLoggingOut={isLoggingOut} />
-            <main className="flex-1 overflow-y-auto p-6 lg:p-8 min-w-0">{children}</main>
+            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 min-w-0">
+              {children}
+            </main>
           </div>
           <Toaster
             position="bottom-right"

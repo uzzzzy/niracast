@@ -197,10 +197,10 @@ export function ChannelsPage() {
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#16161B] shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-[#F5F5F7]">
-              <thead className="border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+        <div className="overflow-hidden md:rounded-2xl md:border md:border-white/10 md:bg-[#16161B] md:shadow-lg">
+          <div className="w-full">
+            <table className="w-full text-left text-sm text-[#F5F5F7] block md:table">
+              <thead className="hidden md:table-header-group border-b border-white/10 bg-white/5 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
                 <tr>
                   <th scope="col" className="px-6 py-3.5 w-24">
                     {t('channel_number')}
@@ -216,7 +216,7 @@ export function ChannelsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/5 block md:table-row-group space-y-3 md:space-y-0">
                 <AnimatePresence>
                   {channels?.map((channel) => (
                     <motion.tr
@@ -226,31 +226,38 @@ export function ChannelsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.98 }}
                       transition={{ duration: DURATION.normal, ease: EASE.spring }}
-                      className="hover:bg-white/[0.02] transition-colors"
+                      className="block md:table-row rounded-2xl border border-white/10 bg-[#16161B] md:border-0 md:bg-transparent p-4 md:p-0 shadow-sm md:shadow-none hover:bg-white/[0.02] transition-colors"
                     >
-                      <td className="px-6 py-4 font-mono font-bold text-neutral-300">
-                        #{channel.number}
+                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 font-mono font-bold text-neutral-300">
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-xs text-[#0A84FF] md:bg-transparent md:text-neutral-300 md:h-auto md:w-auto">
+                          #{channel.number}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 font-medium text-white">
+                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 font-medium text-white">
                         <div className="flex items-center gap-2">
-                          <span>{channel.name}</span>
+                          <span className="text-sm font-semibold md:font-medium">
+                            {channel.name}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-xs text-neutral-400 hidden md:table-cell">
+                      <td className="block md:table-cell px-0 py-1 md:px-6 md:py-4 text-xs text-neutral-400">
+                        <span className="md:hidden text-neutral-500 font-mono text-[11px]">
+                          {t('created_at')}:{' '}
+                        </span>
                         {channel.created_at
                           ? new Date(channel.created_at).toLocaleDateString()
                           : '-'}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <td className="block md:table-cell px-0 pt-3 pb-1 md:px-6 md:py-4 text-right border-t border-white/5 md:border-t-0 mt-2 md:mt-0">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
                           <button
                             type="button"
                             onClick={() => navigate(`/admin/channels/${channel.id}`)}
                             aria-label={t('manage_playlist')}
-                            className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-[#0A84FF]/20 hover:text-[#0A84FF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                            className="flex flex-1 sm:flex-initial min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-[#0A84FF]/20 hover:text-[#0A84FF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
                           >
                             <ListMusic className="h-4 w-4" />
-                            <span className="hidden sm:inline">{t('manage_playlist')}</span>
+                            <span>{t('manage_playlist')}</span>
                           </button>
 
                           <button

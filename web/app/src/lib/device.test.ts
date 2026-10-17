@@ -20,6 +20,18 @@ const UA_DESKTOP_FIREFOX =
 const UA_DESKTOP_SAFARI =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_3_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15';
 
+// Real-world Mobile and Tablet User Agent strings
+const UA_IPHONE =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1';
+const UA_IPAD =
+  'Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1';
+const UA_IPAD_DESKTOP_MODE =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15';
+const UA_ANDROID_PHONE =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro Build/UQ1A.240205.004) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.119 Mobile Safari/537.36';
+const UA_ANDROID_TABLET =
+  'Mozilla/5.0 (Linux; Android 13; SM-X906B Build/TP1A.220624.014) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36';
+
 describe('detectUiProfile', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -39,7 +51,7 @@ describe('detectUiProfile', () => {
     expect(detectUiProfile(UA_WEBOS, '', null)).toBe('tv');
   });
 
-  it('detects TV profile for Android TV (Bravia) UA', () => {
+  it('detects TV profile for Android TV (Bravia) UA (TV still wins)', () => {
     expect(detectUiProfile(UA_ANDROID_TV, '', null)).toBe('tv');
   });
 
@@ -49,6 +61,50 @@ describe('detectUiProfile', () => {
 
   it('detects TV profile for Fire TV (AFTMM) UA', () => {
     expect(detectUiProfile(UA_FIRE_TV, '', null)).toBe('tv');
+  });
+
+  it('detects Mobile profile for real iPhone UA', () => {
+    expect(detectUiProfile(UA_IPHONE, '', null)).toBe('mobile');
+  });
+
+  it('detects Mobile profile for real Android phone UA', () => {
+    expect(detectUiProfile(UA_ANDROID_PHONE, '', null)).toBe('mobile');
+  });
+
+  it('detects Mobile profile for real iPad UA', () => {
+    expect(detectUiProfile(UA_IPAD, '', null)).toBe('mobile');
+  });
+
+  it('detects Mobile profile for real Android tablet UA', () => {
+    expect(detectUiProfile(UA_ANDROID_TABLET, '', null)).toBe('mobile');
+  });
+
+  it('detects Mobile profile for iPad in desktop mode with touch points', () => {
+    expect(
+      detectUiProfile(UA_IPAD_DESKTOP_MODE, '', null, {
+        width: 1024,
+        height: 768,
+        hasTouch: true,
+      }),
+    ).toBe('mobile');
+  });
+
+  it('detects Mobile profile for small viewport width < 768 with coarse pointer or touch', () => {
+    expect(
+      detectUiProfile(UA_DESKTOP_CHROME, '', null, {
+        width: 390,
+        height: 844,
+        pointerCoarse: true,
+      }),
+    ).toBe('mobile');
+
+    expect(
+      detectUiProfile(UA_DESKTOP_CHROME, '', null, {
+        width: 320,
+        height: 568,
+        hasTouch: true,
+      }),
+    ).toBe('mobile');
   });
 
   it('detects Desktop profile for Chrome desktop UA', () => {
@@ -63,7 +119,7 @@ describe('detectUiProfile', () => {
     expect(detectUiProfile(UA_DESKTOP_SAFARI, '', null)).toBe('desktop');
   });
 
-  it('honors query parameter ?ui=tv over desktop UA and persists to storage', () => {
+  it('honors query parameter ?ui=tv over mobile UA and persists to storage', () => {
     const mockStorage: Record<string, string> = {};
     const storage = {
       getItem: (key: string) => mockStorage[key] ?? null,
@@ -72,12 +128,12 @@ describe('detectUiProfile', () => {
       },
     };
 
-    const result = detectUiProfile(UA_DESKTOP_CHROME, '?ui=tv', storage);
+    const result = detectUiProfile(UA_IPHONE, '?ui=tv', storage);
     expect(result).toBe('tv');
     expect(mockStorage.ui).toBe('tv');
   });
 
-  it('honors query parameter ?ui=desktop to force back over TV UA and persists', () => {
+  it('honors query parameter ?ui=desktop to force back over mobile UA and persists', () => {
     const mockStorage: Record<string, string> = {};
     const storage = {
       getItem: (key: string) => mockStorage[key] ?? null,
@@ -86,25 +142,40 @@ describe('detectUiProfile', () => {
       },
     };
 
-    const result = detectUiProfile(UA_TIZEN, '?ui=desktop', storage);
+    const result = detectUiProfile(UA_IPHONE, '?ui=desktop', storage);
     expect(result).toBe('desktop');
     expect(mockStorage.ui).toBe('desktop');
   });
 
-  it('reads stored preference from storage when query param is absent', () => {
+  it('honors query parameter ?ui=mobile to force mobile profile over desktop UA and persists', () => {
+    const mockStorage: Record<string, string> = {};
     const storage = {
+      getItem: (key: string) => mockStorage[key] ?? null,
+      setItem: (key: string, val: string) => {
+        mockStorage[key] = val;
+      },
+    };
+
+    const result = detectUiProfile(UA_DESKTOP_CHROME, '?ui=mobile', storage);
+    expect(result).toBe('mobile');
+    expect(mockStorage.ui).toBe('mobile');
+  });
+
+  it('reads stored preference from storage when query param is absent', () => {
+    const tvStorage = {
       getItem: (key: string) => (key === 'ui' ? 'tv' : null),
     };
-    expect(detectUiProfile(UA_DESKTOP_CHROME, '', storage)).toBe('tv');
+    expect(detectUiProfile(UA_DESKTOP_CHROME, '', tvStorage)).toBe('tv');
+
+    const mobileStorage = {
+      getItem: (key: string) => (key === 'ui' ? 'mobile' : null),
+    };
+    expect(detectUiProfile(UA_DESKTOP_CHROME, '', mobileStorage)).toBe('mobile');
 
     const desktopStorage = {
       getItem: (key: string) => (key === 'ui' ? 'desktop' : null),
     };
-    expect(detectUiProfile(UA_TIZEN, '', desktopStorage)).toBe('desktop');
-  });
-
-  it('falls back to desktop for unknown or mobile query param until phase 8', () => {
-    expect(detectUiProfile(UA_DESKTOP_CHROME, '?ui=mobile', null)).toBe('desktop');
+    expect(detectUiProfile(UA_IPHONE, '', desktopStorage)).toBe('desktop');
   });
 });
 
@@ -118,15 +189,18 @@ describe('useUiProfile and applyUiProfile', () => {
     applyUiProfile('tv');
     expect(document.documentElement.dataset.ui).toBe('tv');
 
+    applyUiProfile('mobile');
+    expect(document.documentElement.dataset.ui).toBe('mobile');
+
     applyUiProfile('desktop');
     expect(document.documentElement.dataset.ui).toBe('desktop');
   });
 
   it('sets document.documentElement.dataset.ui through useUiProfile hook', () => {
-    localStorage.setItem('ui', 'tv');
+    localStorage.setItem('ui', 'mobile');
     const { result } = renderHook(() => useUiProfile());
 
-    expect(result.current).toBe('tv');
-    expect(document.documentElement.dataset.ui).toBe('tv');
+    expect(result.current).toBe('mobile');
+    expect(document.documentElement.dataset.ui).toBe('mobile');
   });
 });

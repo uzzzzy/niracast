@@ -356,3 +356,37 @@ html[data-ui="tv"] [data-testid="idle-card"] h2 {
 html[data-ui="tv"] [data-testid="idle-card"] p {
   font-size: 1rem !important;
 }
+
+/*
+ * Mobile Mode Styling (html[data-ui="mobile"])
+ * Responsive touch experience:
+ * - 100dvh viewport and safe-area support
+ * - Min 44px touch targets
+ * - Overscroll isolation
+ */
+html[data-ui="mobile"] {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+html[data-ui="mobile"] body {
+  min-height: 100dvh;
+  touch-action: manipulation;
+}
+
+/* Safe area padding utilities for mobile */
+.safe-area-top {
+  padding-top: max(env(safe-area-inset-top, 0px), 12px);
+}
+
+.safe-area-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+
+.safe-area-left {
+  padding-left: max(env(safe-area-inset-left, 0px), 12px);
+}
+
+.safe-area-right {
+  padding-right: max(env(safe-area-inset-right, 0px), 12px);
+}
