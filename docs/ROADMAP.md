@@ -64,6 +64,8 @@
 
 ## Future Plan (not yet scheduled)
 
+**Priority overview**: F3 normal (before any public/internet exposure), F1/F2 as already suggested, F4 low (explicitly deprioritised).
+
 ### F1: Scheduled broadcast (TV-style programming)
 - **Goal**: Enable clock-time broadcast programming alongside loop playback. Today a channel is a 24/7 wall-clock loop of its playlist (`now mod total playlist duration`) with no clock times; the `schedules` table already has `start_time`/`duration_sec` columns that are unused by the resolver.
 - **Scope**:
@@ -90,8 +92,32 @@
 - **Risks / Unverified**: Viewer counting accuracy under NAT and caching (UNVERIFIED accuracy, must be measured with real clients).
 - **Done criterion**: CMS shows live viewer counts per channel within ~5 s and a 24 h history chart.
 
+### F3: Public link security and request-flood protection
+- **Priority**: normal (before any public/internet exposure).
+- **Goal**: Protect public HLS streaming routes from request floods, unauthorized hotlinking, and resource exhaustion while preserving legitimate viewer access. Probing the running server (verified 2026-10-17) confirmed original media files and the DB are not exposed (404), path traversal attempts fail, `/api/v1/media` is protected, and viewers only receive the live rolling window (5 x 2s segments, old ones deleted); remaining gaps are that HLS manifest/segment URLs are public with no token, and there is no rate limit on HLS routes, so rapid repeated manifest requests keep or restart FFmpeg per existing channel.
+- **Scope**:
+  - Short-lived signed URLs/tokens for public stream links (HMAC like the session cookie, expiry configurable, issued by the viewer page API and by the M3U feed, validated on `live.m3u8` and `.ts`, optional per-channel on/off for open IPTV use).
+  - Per-IP rate limiting on HLS routes and on manifest requests that would start a channel (`golang.org/x/time/rate` is already a dependency; do not trust `X-Forwarded-For` unless a trusted-proxy setting is configured).
+  - Cap on concurrently running FFmpeg processes and a per-channel start cooldown.
+  - HTTP 429 response with `Retry-After`, metrics/log lines for blocked requests.
+  - Review CORS and security headers (`X-Content-Type-Options`, `Referrer-Policy`) on public routes.
+- **Dependencies**: None hard; pair with F2 analytics for visibility; decide token UX for third-party IPTV players (M3U with token query parameter, unverified player compatibility).
+- **Risks / Unverified**: Token in URL can leak via logs/referrer and can be shared; some IPTV apps may not refresh tokens in long-running playback; NAT/shared IPs can be throttled together.
+- **Done criterion**: Tokenless or expired requests get 401/403, a flood from one IP is throttled while other viewers are unaffected, FFmpeg process count never exceeds the cap, covered by tests and a live curl check.
+
+### F4: Anti-recording / stream protection
+- **Priority**: LOW (explicitly deprioritised by the user).
+- **Goal**: Raise the effort needed to record the live stream. Honest limitation to state: any stream that is playable can be recorded; these measures only deter casual copying, and the key is delivered to legitimate clients, so determined users can still capture it; visible or forensic watermarking costs CPU and eliminates the zero-CPU copy path.
+- **Scope**:
+  - HLS AES-128 encryption with a key endpoint that requires a valid token.
+  - Visible or forensic watermark per session (FFmpeg overlay or burned session ID, which needs transcoding and gives up the zero-CPU copy path).
+  - Shorter-lived tokens.
+- **Dependencies**: F3 tokens.
+- **Risks / Unverified**: Watermarking and on-the-fly re-encoding sacrifice zero-CPU copy performance; keys delivered to client players can be captured by determined actors; older IPTV device compatibility with encrypted HLS.
+- **Done criterion**: Defined at implementation time; do not start before F3.
+
 ### Suggested order
-After Phase 8 or interleaved after Phase 5: F1 then F2 (or F2 first if monitoring matters more). Both are proposals to be confirmed by the user.
+After Phase 8 or interleaved after Phase 5: F3 before any public/internet exposure; F1 then F2 (or F2 first if monitoring matters more); F4 low (user-deprioritised). All proposals to be confirmed by the user.
 
 ## Open & Unverified Questions
 - **Unverified:** Manifest discontinuity behavior: Verify player stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode-copy switching on Safari and Smart TVs.

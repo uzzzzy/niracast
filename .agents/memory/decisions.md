@@ -36,6 +36,9 @@
   - Schedule planner deferred: Visual schedule planner was deliberately not built here because F1 (scheduled broadcast) in the roadmap Future Plan owns calendar slot resolution.
   - Filler management view-only: Filler management is view-only on the System page; idle card generation remains automated server-side.
 - **2026-10-17**: Future plan recorded: scheduled broadcast (F1) and realtime analytics (F2), not scheduled yet; see docs/ROADMAP.md.
+- **2026-10-17**: Future plan expanded with F3 and F4 (docs/ROADMAP.md):
+  - F3 (Public link security and request-flood protection): Priority normal (must precede any public/internet exposure). Mitigates remaining attack surface (unauthenticated HLS manifest/segment routes and lack of rate limiting) via short-lived HMAC-signed stream tokens, per-IP rate limiting (RemoteAddr default, never trust X-Forwarded-For without trusted proxy config), concurrency cap on FFmpeg instances, per-channel start cooldown, 429 Retry-After, and security headers.
+  - F4 (Anti-recording / stream protection): Priority LOW (explicitly deprioritised by user decision). Acknowledged technical reality that any stream playable on client hardware can be captured; casual deterrence only (AES-128 encryption with tokenized key delivery, forensic watermarking which sacrifices zero-CPU stream copy); strictly deferred until after F3.
 
 
 
