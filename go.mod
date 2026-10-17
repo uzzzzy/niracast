@@ -1,4 +1,4 @@
-module tv-stream
+module github.com/uzzzzy/niracast
 
 go 1.27.1
 

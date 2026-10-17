@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"tv-stream/internal/analytics"
-	"tv-stream/internal/stream"
+	"github.com/uzzzzy/niracast/internal/analytics"
+	"github.com/uzzzzy/niracast/internal/stream"
 )
 
 // AnalyticsHandler serves real-time and historical analytics endpoints.

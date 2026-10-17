@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"tv-stream/internal/events"
-	"tv-stream/internal/ingest"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/events"
+	"github.com/uzzzzy/niracast/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // Playout control errors.

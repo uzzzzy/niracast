@@ -150,7 +150,7 @@ export function setStoredMotionPreference(pref: MotionPreference): void {
   applyMotionMode(effective);
 
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('tvstream-motion-change', { detail: pref }));
+    window.dispatchEvent(new CustomEvent('niracast-motion-change', { detail: pref }));
   }
 }
 
@@ -224,7 +224,7 @@ export function useMotionMode() {
     const handleCustomChange = () => {
       sync();
     };
-    window.addEventListener('tvstream-motion-change', handleCustomChange);
+    window.addEventListener('niracast-motion-change', handleCustomChange);
 
     return () => {
       if (mql) {
@@ -239,7 +239,7 @@ export function useMotionMode() {
         }
       }
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('tvstream-motion-change', handleCustomChange);
+      window.removeEventListener('niracast-motion-change', handleCustomChange);
     };
   }, [sync]);
 

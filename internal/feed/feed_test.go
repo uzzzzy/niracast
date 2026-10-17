@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/db"
-	"tv-stream/internal/models"
+	"github.com/uzzzzy/niracast/internal/db"
+	"github.com/uzzzzy/niracast/internal/models"
 )
 
 func setup(t *testing.T) *Handler {
@@ -71,7 +71,7 @@ func TestEPG(t *testing.T) {
 	if err := xml.Unmarshal(rec.Body.Bytes(), &doc); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if doc.Generator != "tv-stream" || len(doc.Channels) != 1 || doc.Channels[0].DisplayName != "Classic Movies" {
+	if doc.Generator != "niracast" || len(doc.Channels) != 1 || doc.Channels[0].DisplayName != "Classic Movies" {
 		t.Fatalf("bad doc: %+v", doc)
 	}
 	if len(doc.Programme) < 8 {

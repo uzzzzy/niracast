@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/db"
-	"tv-stream/internal/ingest"
-	"tv-stream/internal/stream"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/db"
+	"github.com/uzzzzy/niracast/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/stream"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // --- fakes ---

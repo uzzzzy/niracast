@@ -218,6 +218,7 @@ func (a *Auth) Login(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Password string `json:"password"`
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"})
 		return

@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"tv-stream/internal/analytics"
-	"tv-stream/internal/ingest"
-	"tv-stream/internal/stream"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/analytics"
+	"github.com/uzzzzy/niracast/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/stream"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // hlsHandler starts a channel's FFmpeg session on demand (at the wall-clock

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"tv-stream/internal/models"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/models"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 // ScheduleHandler serves channel schedule and slot management endpoints.
@@ -219,6 +219,7 @@ func (h *ScheduleHandler) getSchedule(w http.ResponseWriter, r *http.Request) {
 
 func (h *ScheduleHandler) decodeSlotInput(w http.ResponseWriter, r *http.Request) (models.SlotInput, bool) {
 	var in models.SlotInput
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		chWriteError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return in, false

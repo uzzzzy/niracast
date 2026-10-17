@@ -116,7 +116,7 @@ This file is the source of truth for tokens, materials and component rules. Code
   - On top sits a `--surface-0` scrim at 35% (dark) or 20% (light).
   - It drifts slowly: opacity 0.85–1 and scale 1–1.04 over 40s, alternating. The drift is off in lite and reduced modes.
 
-## Assets (`src/assets/`, WebP, generated with imagine-agy, no baked-in text)
+## Assets (`src/assets/`, WebP, AI-generated, no baked-in text)
 `wall-{dark,light}.webp` and `wall-{dark,light}-portrait.webp`, `login-hero.webp`, `idle-art.webp`, `empty-{media,playlist,channels}.webp`, `not-found.webp`, `channel-placeholder-{1,2,3}.webp`.
 The server idle frame `assets/filler/siaran_segera_kembali.jpg` is built from `idle-art`, with its text drawn by ffmpeg.
 

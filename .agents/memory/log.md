@@ -125,3 +125,10 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Added unit tests in `internal/stream/supervisor_health_test.go` validating exit error formatting and health recording.
 
 
+
+## 2026-10-17 — Public release preparation (Niracast)
+- Renamed project tv-stream -> Niracast (module `github.com/uzzzzy/niracast`, Docker, UI titles, storage keys, event names). DB default is now `/data/niracast.db`.
+- Default UI language is English; Indonesian remains selectable. Added LICENSE (MIT), NOTICE.md, README.md, SECURITY.md, CONTRIBUTING.md, GitHub issue/PR templates and CI workflow.
+- Hardening: Docker `-trimpath` + HEALTHCHECK, DB parent dir creation, request body size limits, `.gitignore` additions, `TIMEZONE` documented (compose defaults to UTC).
+- Security review via agy (auth, HLS/ffmpeg, web/api): no critical findings; body size limits applied. Known low items: generated admin password is logged once at startup by design; M3U URLs use request Host.
+- Verified: go vet, go test, pnpm check/typecheck/test/build all pass.

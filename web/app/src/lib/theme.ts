@@ -79,7 +79,7 @@ export function setStoredTheme(pref: ThemePreference): void {
   applyTheme(pref);
 
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('tvstream-theme-change', { detail: pref }));
+    window.dispatchEvent(new CustomEvent('niracast-theme-change', { detail: pref }));
   }
 }
 
@@ -139,7 +139,7 @@ export function useTheme() {
     const handleCustomChange = () => {
       sync();
     };
-    window.addEventListener('tvstream-theme-change', handleCustomChange);
+    window.addEventListener('niracast-theme-change', handleCustomChange);
 
     return () => {
       if (mql) {
@@ -154,7 +154,7 @@ export function useTheme() {
         }
       }
       window.removeEventListener('storage', handleStorage);
-      window.removeEventListener('tvstream-theme-change', handleCustomChange);
+      window.removeEventListener('niracast-theme-change', handleCustomChange);
     };
   }, [sync]);
 

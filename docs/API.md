@@ -1,6 +1,6 @@
 # API Reference
 
-This document describes the HTTP API for `tv-stream`.
+This document describes the HTTP API for `niracast`.
 
 ## Authentication & Headers
 - Mutations (`POST`, `PUT`, `DELETE`) require authentication via the `tvs_session` HTTP-only cookie and the CSRF token header:

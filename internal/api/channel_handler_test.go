@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func chSetup(t *testing.T) func(method, path, body string) *httptest.ResponseRecorder {

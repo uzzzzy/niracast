@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"tv-stream/internal/models"
+	"github.com/uzzzzy/niracast/internal/models"
 )
 
 // PlayoutStopper terminates stream playout for a channel.
@@ -93,6 +93,7 @@ func chPathID(w http.ResponseWriter, r *http.Request) (int64, bool) {
 
 func chDecode(w http.ResponseWriter, r *http.Request) (models.ChannelInput, bool) {
 	var in models.ChannelInput
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		chWriteError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return in, false
@@ -203,6 +204,7 @@ func (h *ChannelHandler) setPlaylist(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var in models.PlaylistInput
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
 		chWriteError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return

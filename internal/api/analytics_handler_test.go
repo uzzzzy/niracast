@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/analytics"
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/analytics"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func TestAnalyticsHandler_Endpoints(t *testing.T) {

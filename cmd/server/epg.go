@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"tv-stream/internal/stream"
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/stream"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 type epgItemResponse struct {

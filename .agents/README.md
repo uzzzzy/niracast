@@ -1,6 +1,6 @@
 # Agent Workspace (`.agents/`)
 
-Shared memory and task coordination directory for autonomous and human agents working on `tv-stream`.
+Shared memory and task coordination directory for autonomous and human agents working on `niracast`.
 
 ## Directory Map
 

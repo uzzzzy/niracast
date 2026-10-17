@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/db"
+	"github.com/uzzzzy/niracast/internal/db"
 )
 
 func setupScheduleTest(t *testing.T) (*ScheduleHandler, *fakeReloader, func(method, path, body string) *httptest.ResponseRecorder) {

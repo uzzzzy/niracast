@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"tv-stream/internal/timeline"
+	"github.com/uzzzzy/niracast/internal/timeline"
 )
 
 type failController struct {

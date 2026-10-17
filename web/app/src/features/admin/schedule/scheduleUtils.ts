@@ -1,5 +1,5 @@
 /**
- * Timezone-aware date & time utilities for tv-stream schedule planner.
+ * Timezone-aware date & time utilities for niracast schedule planner.
  * Uses native Intl.DateTimeFormat with IANA timezone strings without external date libraries.
  */
 

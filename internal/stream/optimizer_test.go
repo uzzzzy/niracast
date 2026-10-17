@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"tv-stream/internal/ingest"
+	"github.com/uzzzzy/niracast/internal/ingest"
 )
 
 func TestOptimizer(t *testing.T) {

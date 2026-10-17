@@ -16,15 +16,15 @@ describe('i18n', () => {
     });
   });
 
-  it('defaults to Indonesian (id)', () => {
+  it('defaults to English (en)', () => {
     Object.defineProperty(globalThis, 'navigator', {
       value: { language: 'fr-FR' },
       configurable: true,
       writable: true,
     });
-    expect(getLanguage()).toBe('id');
+    expect(getLanguage()).toBe('en');
     expect(t('live')).toBe('LIVE');
-    expect(t('idle_title')).toBe('Siaran Segera Kembali');
+    expect(t('idle_title')).toBe("We'll be right back");
   });
 
   it('uses localStorage lang when set', () => {

@@ -1,6 +1,6 @@
 # Git Flow Specification
 
-This repository follows a strict Git Flow branching model. All git operations (branch creation, commits, merges, tags) are authored and executed by the `agy` CLI. Direct commits to `main` are prohibited. Force pushes are forbidden. Pushes to remote and remote configuration require explicit user consent.
+This repository follows a strict Git Flow branching model. Direct commits to `main` are prohibited. Force pushes are forbidden. Pushes to remote and remote configuration require explicit user consent.
 
 ## Branch Strategy
 
@@ -39,7 +39,7 @@ This repository follows a strict Git Flow branching model. All git operations (b
 
 ## Command Cheat-Sheet
 
-All git actions are executed by `agy`.
+Typical commands:
 
 ### 1. Feature Branch (`feature/<slug>`)
 ```bash
