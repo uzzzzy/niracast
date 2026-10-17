@@ -23,10 +23,16 @@ type fakeController struct {
 	starts  []StreamConfig
 	running map[int64]chan struct{} // open = running; close() = exit
 	stopErr error
+	lastErr map[int64]error
+	stderr  map[int64]string
 }
 
 func newFakeController() *fakeController {
-	return &fakeController{running: make(map[int64]chan struct{})}
+	return &fakeController{
+		running: make(map[int64]chan struct{}),
+		lastErr: make(map[int64]error),
+		stderr:  make(map[int64]string),
+	}
 }
 
 func (f *fakeController) StartStream(_ context.Context, cfg StreamConfig) error {
@@ -70,14 +76,42 @@ func (f *fakeController) Done(id int64) <-chan struct{} {
 	return closed
 }
 
-func (f *fakeController) StderrTail(_ int64) string {
+func (f *fakeController) StderrTail(id int64) string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.stderr != nil {
+		return f.stderr[id]
+	}
 	return ""
+}
+
+func (f *fakeController) LastExitErr(id int64) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.lastErr != nil {
+		return f.lastErr[id]
+	}
+	return nil
 }
 
 // exitChannel closes the running channel for channelID, simulating natural exit.
 func (f *fakeController) exitChannel(id int64) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if ch, ok := f.running[id]; ok {
+		delete(f.running, id)
+		close(ch)
+	}
+}
+
+// exitChannelWithErr closes the running channel for channelID and records the exit error.
+func (f *fakeController) exitChannelWithErr(id int64, err error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.lastErr == nil {
+		f.lastErr = make(map[int64]error)
+	}
+	f.lastErr[id] = err
 	if ch, ok := f.running[id]; ok {
 		delete(f.running, id)
 		close(ch)

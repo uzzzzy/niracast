@@ -90,6 +90,9 @@ type Supervisor struct {
 
 	// modeLookup optionally returns the channel mode ("loop" or "scheduled").
 	modeLookup func(channelID int64) (string, error)
+
+	// now optionally overrides time.Now for testing elapsed times.
+	now func() time.Time
 }
 
 // NewSupervisor constructs a Supervisor.
@@ -177,23 +180,57 @@ func (s *Supervisor) Health(channelID int64) (int, string) {
 	return s.restarts[channelID], s.lastErrors[channelID]
 }
 
+// exitErrorReporter is an optional interface implemented by ProcessControllers
+// (such as *FFmpegController) that track process exit errors.
+type exitErrorReporter interface {
+	LastExitErr(channelID int64) error
+}
+
+func (s *Supervisor) lastExitErr(channelID int64) error {
+	if rep, ok := s.ctrl.(exitErrorReporter); ok {
+		return rep.LastExitErr(channelID)
+	}
+	return nil
+}
+
+func formatExitReason(exitErr error, stderr string) string {
+	tail := strings.TrimSpace(stderr)
+	if exitErr == nil {
+		return tail
+	}
+	if tail == "" {
+		return exitErr.Error()
+	}
+	if strings.Contains(tail, exitErr.Error()) {
+		return tail
+	}
+	return exitErr.Error() + ": " + tail
+}
+
+func (s *Supervisor) nowFunc() time.Time {
+	if s.now != nil {
+		return s.now()
+	}
+	return time.Now()
+}
+
 // nowWithOffset returns current time shifted by the channel's in-memory skipOffset.
 func (s *Supervisor) nowWithOffset(channelID int64) time.Time {
 	s.mu.Lock()
 	offset := s.skipOffsets[channelID]
 	s.mu.Unlock()
 	if offset == 0 {
-		return time.Now()
+		return s.nowFunc()
 	}
-	return time.Now().Add(time.Duration(offset * float64(time.Second)))
+	return s.nowFunc().Add(time.Duration(offset * float64(time.Second)))
 }
 
 func (s *Supervisor) nowWithOffsetLocked(channelID int64) time.Time {
 	offset := s.skipOffsets[channelID]
 	if offset == 0 {
-		return time.Now()
+		return s.nowFunc()
 	}
-	return time.Now().Add(time.Duration(offset * float64(time.Second)))
+	return s.nowFunc().Add(time.Duration(offset * float64(time.Second)))
 }
 
 // Ensure starts the playout loop for channelID if one is not already running.
@@ -326,7 +363,7 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 
 		first = false
 
-		startedAt := time.Now()
+		startedAt := s.nowFunc()
 		if err := s.ctrl.StartStream(ctx, cfg); err != nil {
 			if ctx.Err() != nil {
 				return
@@ -417,7 +454,7 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			}
 		}
 
-		elapsed := time.Since(startedAt)
+		elapsed := s.nowFunc().Sub(startedAt)
 
 		// Stop the current process before starting the next item.
 		// StopStream is a no-op if the process already exited naturally.
@@ -436,7 +473,11 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			tail := s.ctrl.StderrTail(channelID)
 			errMsg := strings.TrimSpace(tail)
 			if errMsg == "" {
-				errMsg = "fast exit"
+				if exitErr := s.lastExitErr(channelID); exitErr != nil {
+					errMsg = exitErr.Error()
+				} else {
+					errMsg = "fast exit"
+				}
 			}
 			if trimmed := strings.TrimSpace(tail); trimmed != "" {
 				log.Printf("supervisor: channel %d fast failure (elapsed %v): %s", channelID, elapsed, trimmed)
@@ -447,6 +488,12 @@ func (s *Supervisor) loop(ctx context.Context, cancel context.CancelFunc, channe
 			restartedInCycle = true
 		} else {
 			consecutiveFails = 0
+			if exitErr := s.lastExitErr(channelID); exitErr != nil {
+				errMsg := formatExitReason(exitErr, s.ctrl.StderrTail(channelID))
+				log.Printf("supervisor: channel %d exit error (elapsed %v): %s", channelID, elapsed, errMsg)
+				s.recordHealth(channelID, true, errMsg)
+				restartedInCycle = true
+			}
 		}
 
 		// Check inactivity again before spinning for the next item.

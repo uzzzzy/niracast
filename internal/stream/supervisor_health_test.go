@@ -3,6 +3,7 @@ package stream
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ type failController struct {
 	failStart bool
 	startErr  error
 	stderr    string
+	exitErr   error
 }
 
 func (f *failController) StartStream(ctx context.Context, cfg StreamConfig) error {
@@ -28,6 +30,13 @@ func (f *failController) StderrTail(id int64) string {
 		return f.stderr
 	}
 	return f.fakeController.StderrTail(id)
+}
+
+func (f *failController) LastExitErr(id int64) error {
+	if f.exitErr != nil {
+		return f.exitErr
+	}
+	return f.fakeController.LastExitErr(id)
 }
 
 func TestSupervisor_Health_StartStreamFailure(t *testing.T) {
@@ -203,5 +212,139 @@ func TestSupervisor_Health_LoopIterations(t *testing.T) {
 	}
 	if !foundHealth {
 		t.Errorf("channel.health event not received on loop restart; got: %+v", pub.all())
+	}
+}
+
+func TestSupervisor_Health_NonFastExitError(t *testing.T) {
+	fakeCtrl := newFakeController()
+	ctrl := &failController{
+		fakeController: fakeCtrl,
+		exitErr:        errors.New("signal: killed"),
+	}
+
+	tempFile := makeTempFile(t, "health_nonfast.mp4")
+	resolver := &fakeResolver{
+		items: []timeline.PlayoutItem{
+			{MediaID: 30, FilePath: tempFile, RemainingSec: 60},
+		},
+	}
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	pub := &fakeRecorderPublisher{}
+	sv := NewSupervisor(resolver, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+	sv.SetPublisher(pub)
+
+	var mu sync.Mutex
+	currentTime := time.Now()
+	sv.now = func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return currentTime
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	channelID := int64(1004)
+	sv.Ensure(ctx, channelID)
+
+	// Wait for stream to start
+	if !waitCond(t, 2*time.Second, func() bool {
+		return sv.Status(channelID).State == "playing"
+	}) {
+		t.Fatal("stream did not transition to playing")
+	}
+
+	// Advance time past 2 seconds (e.g. 53s) so it is treated as a non-fast exit
+	mu.Lock()
+	currentTime = currentTime.Add(53 * time.Second)
+	mu.Unlock()
+
+	ctrl.exitChannel(channelID)
+
+	// Wait for restart count to be incremented and last error recorded as "signal: killed"
+	if !waitCond(t, 3*time.Second, func() bool {
+		restarts, lastErr := sv.Health(channelID)
+		return restarts >= 1 && lastErr == "signal: killed"
+	}) {
+		r, e := sv.Health(channelID)
+		t.Fatalf("expected restart >= 1 and last error 'signal: killed', got restarts=%d, lastErr=%q", r, e)
+	}
+
+	st := sv.Status(channelID)
+	if st.Restarts < 1 || st.LastError != "signal: killed" {
+		t.Errorf("Status() Restarts=%d, LastError=%q", st.Restarts, st.LastError)
+	}
+
+	// Verify channel.health event was published
+	var foundHealth bool
+	for _, ev := range pub.all() {
+		if ev.Type == "channel.health" && ev.ChannelID == channelID {
+			if ev.Data["last_error"] == "signal: killed" {
+				foundHealth = true
+				break
+			}
+		}
+	}
+	if !foundHealth {
+		t.Errorf("channel.health event not received for non-fast exit; got: %+v", pub.all())
+	}
+}
+
+func TestSupervisor_Health_NonFastExitWithStderr(t *testing.T) {
+	fakeCtrl := newFakeController()
+	ctrl := &failController{
+		fakeController: fakeCtrl,
+		exitErr:        errors.New("exit status 1"),
+		stderr:         "codec error",
+	}
+
+	tempFile := makeTempFile(t, "health_nonfast_stderr.mp4")
+	resolver := &fakeResolver{
+		items: []timeline.PlayoutItem{
+			{MediaID: 35, FilePath: tempFile, RemainingSec: 60},
+		},
+	}
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	pub := &fakeRecorderPublisher{}
+	sv := NewSupervisor(resolver, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+	sv.SetPublisher(pub)
+
+	var mu sync.Mutex
+	currentTime := time.Now()
+	sv.now = func() time.Time {
+		mu.Lock()
+		defer mu.Unlock()
+		return currentTime
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	channelID := int64(1005)
+	sv.Ensure(ctx, channelID)
+
+	if !waitCond(t, 2*time.Second, func() bool {
+		return sv.Status(channelID).State == "playing"
+	}) {
+		t.Fatal("stream did not transition to playing")
+	}
+
+	mu.Lock()
+	currentTime = currentTime.Add(53 * time.Second)
+	mu.Unlock()
+
+	ctrl.exitChannel(channelID)
+
+	expectedErr := "exit status 1: codec error"
+	if !waitCond(t, 3*time.Second, func() bool {
+		restarts, lastErr := sv.Health(channelID)
+		return restarts >= 1 && lastErr == expectedErr
+	}) {
+		r, e := sv.Health(channelID)
+		t.Fatalf("expected restart >= 1 and last error %q, got restarts=%d, lastErr=%q", expectedErr, r, e)
 	}
 }

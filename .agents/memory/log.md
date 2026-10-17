@@ -118,5 +118,10 @@ Append-only history of work sessions and milestones. Add newest entries at the b
 - **Roadmap F2 Realtime Analytics Delivery Completed (2026-10-17)** (`feature/realtime-analytics`):
   - Delivered end-to-end playout analytics across backend and frontend: HLS telemetry tracker, privacy-preserving client IDs (`SHA-256(daily salt + IP + UA)`), 10s active viewer estimation, byte-counting middleware, SQLite tables `analytics_minute` (30-day retention) and `analytics_daily` (1-year retention), background flusher and daily rollup workers, supervisor process restart and error tracking, protected REST APIs (`/api/v1/analytics/live`, `timeseries`, `top-media`), real-time SSE broadcasts (`viewers.update`, `channel.health`), zero-dependency SVG `AreaChart` and `BarChart` components, `/admin/analytics` CMS monitoring dashboard with 1h/24h/7d/30d filters, and live Overview channel card badges.
   - Documentation updated in `docs/ROADMAP.md` (marked `DONE-pending-live-verification`), `.agents/memory/known-gaps.md` (documented estimation limits, 10s vs 60s reaper separation, lack of GeoIP, unverified client-side bandwidth, and pending live verification), and `.agents/memory/architecture.md`. All unit and integration suites passing.
+- **Supervisor Playout Exit Error Tracking (2026-10-17)**:
+  - Extended stream `Supervisor` with `exitErrorReporter` interface integration to capture controller exit errors on stream termination.
+  - Records abnormal non-fast process exit errors in channel health metrics and broadcasts `channel.health` SSE events.
+  - Added fallback exit error message for fast exits when stderr tail is empty.
+  - Added unit tests in `internal/stream/supervisor_health_test.go` validating exit error formatting and health recording.
 
 
