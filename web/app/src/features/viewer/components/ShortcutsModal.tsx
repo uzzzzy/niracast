@@ -18,6 +18,7 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
     { key: 'C', desc: t('shortcuts_c') },
     { key: '↑ / ↓', desc: t('shortcuts_up_down') },
     { key: '1 - 9', desc: t('shortcuts_digits') },
+    { key: 'N', desc: t('shortcuts_n') },
     { key: 'Esc', desc: t('shortcuts_esc') },
     { key: '?', desc: t('shortcuts_help') },
   ];

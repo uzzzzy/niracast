@@ -28,12 +28,14 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import { api, type MediaFile } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
+import { DURATION, EASE } from '../../../lib/motion/tokens';
 import {
   addToPlaylist,
   calculateTotalDuration,
@@ -368,11 +370,21 @@ export function PlaylistEditorPage() {
                   key={item.instanceId}
                   style={{
                     width: `${Math.max(0.5, widthPct)}%`,
-                    backgroundColor: color,
                   }}
-                  className="h-full border-r border-black/40 transition-all hover:brightness-125 cursor-pointer opacity-85 hover:opacity-100"
+                  className="h-full border-r border-black/40 overflow-hidden"
                   title={`${item.filename} (${formatDuration(item.duration_sec)})`}
-                />
+                >
+                  <motion.div
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: DURATION.normal, ease: EASE.spring }}
+                    style={{
+                      transformOrigin: 'left',
+                      backgroundColor: color,
+                    }}
+                    className="h-full w-full hover:brightness-125 cursor-pointer opacity-85 hover:opacity-100"
+                  />
+                </div>
               );
             })
           )}
@@ -490,14 +502,20 @@ export function PlaylistEditorPage() {
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-2">
-                    {playlistItems.map((item, index) => (
-                      <SortableItem
-                        key={item.instanceId}
-                        item={item}
-                        index={index}
-                        onRemove={handleRemoveItem}
-                      />
-                    ))}
+                    <AnimatePresence initial={false}>
+                      {playlistItems.map((item, index) => (
+                        <motion.div
+                          key={item.instanceId}
+                          layout="position"
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.96 }}
+                          transition={{ duration: DURATION.fast, ease: EASE.spring }}
+                        >
+                          <SortableItem item={item} index={index} onRemove={handleRemoveItem} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
                 </SortableContext>
               </DndContext>

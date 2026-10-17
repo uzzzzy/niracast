@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { rampVolumeDown, restoreVolume } from '../features/viewer/channelTransition';
 import { ChannelDrawer } from '../features/viewer/components/ChannelDrawer';
 import { HudOverlay } from '../features/viewer/components/HudOverlay';
 import { IdleCard } from '../features/viewer/components/IdleCard';
@@ -10,6 +11,7 @@ import { ShortcutsModal } from '../features/viewer/components/ShortcutsModal';
 import { useHlsPlayer } from '../features/viewer/hooks/useHlsPlayer';
 import { api } from '../lib/api';
 import { t } from '../lib/i18n';
+import { useMotionMode } from '../lib/motion/mode';
 
 export default function ViewerPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +38,14 @@ export default function ViewerPage() {
   const [volume, setVolume] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [liveAnnouncement, setLiveAnnouncement] = useState('');
+
+  // Motion mode and channel switch transition state
+  const { cyclePreference } = useMotionMode();
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [bumpChannel, setBumpChannel] = useState<{ number: number; name: string } | null>(null);
+  const prevIdRef = useRef<string | undefined>(id);
+  const savedVolumeRef = useRef<number>(1);
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 1. Fetch channel list (every 30s)
   const { data: channels = [] } = useQuery({
@@ -90,6 +100,42 @@ export default function ViewerPage() {
       setLiveAnnouncement(`Channel ${channel.number}, ${channel.name}`);
     }
   }, [channel]);
+
+  // Channel switch transition: fade stage out 200ms, ramp volume down 200ms, bump for ~1.2s, fade in
+  useEffect(() => {
+    if (prevIdRef.current && prevIdRef.current !== id) {
+      const target = channels.find((c) => String(c.id) === id);
+      if (target) {
+        setBumpChannel({ number: target.number, name: target.name });
+      }
+      setIsSwitching(true);
+
+      const video = videoRef.current;
+      if (video) {
+        savedVolumeRef.current = video.volume;
+        rampVolumeDown(video, 200);
+      }
+
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+      }
+
+      switchTimerRef.current = setTimeout(() => {
+        setIsSwitching(false);
+        setBumpChannel(null);
+        if (videoRef.current) {
+          restoreVolume(videoRef.current, savedVolumeRef.current, 200);
+        }
+      }, 1200);
+    }
+    prevIdRef.current = id;
+
+    return () => {
+      if (switchTimerRef.current) {
+        clearTimeout(switchTimerRef.current);
+      }
+    };
+  }, [id, channels]);
 
   // Progress computation & local 1s tick
   const [localSeekSec, setLocalSeekSec] = useState(0);
@@ -343,6 +389,13 @@ export default function ViewerPage() {
         return;
       }
 
+      // N: cycle motion mode (Auto / Full / Lite)
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        cyclePreference();
+        return;
+      }
+
       // ArrowDown / PageDown: next channel
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         e.preventDefault();
@@ -364,6 +417,7 @@ export default function ViewerPage() {
     sortedChannels,
     navigateToChannel,
     navigateChannelRelative,
+    cyclePreference,
   ]);
 
   if (channelLoading) {
@@ -408,15 +462,37 @@ export default function ViewerPage() {
         {liveAnnouncement}
       </div>
 
-      {/* Video Element (object-contain, full viewport stage) */}
-      <video
-        ref={handleVideoRef}
-        playsInline
-        className="h-full w-full object-contain"
-        aria-label={channel.name}
+      {/* Video Element (object-contain, full viewport stage with 200ms fade on switch) */}
+      <div
+        className={`h-full w-full transition-opacity duration-200 ${
+          isSwitching ? 'opacity-0' : 'opacity-100'
+        }`}
       >
-        <track kind="captions" />
-      </video>
+        <video
+          ref={handleVideoRef}
+          playsInline
+          className="h-full w-full object-contain"
+          aria-label={channel.name}
+        >
+          <track kind="captions" />
+        </video>
+      </div>
+
+      {/* Centered Channel Bump Overlay on Switch (~1.2s transform+opacity, strictly no backdrop-filter) */}
+      {isSwitching && (bumpChannel || channel) && (
+        <div
+          data-testid="channel-bump"
+          className="pointer-events-none fixed top-1/2 left-1/2 z-30 animate-channel-bump flex items-center gap-3 rounded-2xl border border-white/20 bg-[#16161B]/95 px-6 py-4 shadow-2xl"
+        >
+          <span className="font-mono text-2xl font-bold text-[#0A84FF]">
+            #{(bumpChannel || channel).number}
+          </span>
+          <span className="h-6 w-px bg-white/20" />
+          <span className="text-xl font-semibold tracking-wide text-white">
+            {(bumpChannel || channel).name}
+          </span>
+        </div>
+      )}
 
       {/* Loading Overlay */}
       {phase === 'loading' && (

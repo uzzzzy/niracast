@@ -17,4 +17,10 @@
 - **Conditional Frontend Pre-commit**: Pre-commit hook runs `pnpm check` and `pnpm typecheck` only when `web/app/node_modules` exists.
 - **No Clock-Time Scheduling**: Channels currently loop playlists via wall-clock modulo without fixed-time calendar slot resolution or idle-slate gap filling. Target: Future Plan F1 (`docs/ROADMAP.md`).
 - **No Playout Analytics**: No concurrent viewer estimation, outbound bandwidth tracking, or historical audience metrics. Target: Future Plan F2 (`docs/ROADMAP.md`).
+- **Public HLS Links Unauthenticated & No Rate Limiting**: HLS manifest (`live.m3u8`) and segment (`.ts`) URLs are public with no access tokens, and routes lack rate limiting, allowing rapid manifest requests to keep or restart FFmpeg per channel. Media files and DB remain secure. Target: Future Plan F3 (`docs/ROADMAP.md`).
+- **Live Stream Recording Not Prevented**: Live stream can be recorded or captured by viewers; casual deterrence only (AES-128, watermarking), and watermarking sacrifices zero-CPU copy mode. Priority: LOW (user decision). Target: Future Plan F4 (`docs/ROADMAP.md`).
+- **Admin Chunk Growth**: Admin chunk grew to 415kB raw / 126kB gzip because of the motion library (idea: `LazyMotion`/`m` components to shrink).
+- **Sonner Height Transition**: `sonner`'s own CSS transitions `height` (third-party, admin only).
+- **Volume Reset on Channel Switch**: User volume resets to 1 after a channel switch because the video element remounts (to fix: persist volume/mute in localStorage, planned in phase 7).
+- **Motion Performance & Browser Compatibility (Unverified)**: FPS under 4x CPU throttle and Safari/TV behaviour unverified.
 

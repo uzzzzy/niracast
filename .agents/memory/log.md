@@ -48,6 +48,17 @@ Append-only history of work sessions and milestones. Add newest entries at the b
   - Admin feature module (`web/app/src/features/admin`): Built authentication gate, login card, admin shell with sidebar navigation, Overview live monitor via SSE `EventSource` and manual item skip, Channels CRUD with native `<dialog>` modals, drag-and-drop playlist editor with `@dnd-kit/sortable`, loop timeline, and dirty state tracking, Media library with codec badges and rescan status polling, and System metrics page.
   - Tooling & UI: Integrated `@dnd-kit` suite and `sonner` in the lazy admin chunk, native `<dialog>` modals without heavy UI frameworks, and id/en i18n support.
   - Verified: Backend unit/integration tests and live `curl` API tests passed; frontend checks (`pnpm check`, `pnpm typecheck`, `pnpm test` [49 tests], `pnpm build`) passed; real browser run verified login, live Overview via SSE, Skip button live playout advance, and playlist drag-and-drop reordering persisted on the server.
+- **Future Plan Extended with Security & Anti-Recording Proposals (F3 & F4)**:
+  - Documented F3 (Public link security and request-flood protection, priority normal before any public/internet exposure) and F4 (Anti-recording / stream protection, priority LOW, explicitly deprioritised by user decision) in `docs/ROADMAP.md`.
+  - Added Priority overview to Future Plan section.
+  - Recorded 2026-10-17 server probing findings (DB and media files protected at 404, /api/v1/media authenticated, live 5x2s segment rolling window; gaps in unauthenticated manifest/segment URLs and lack of rate limiting).
+  - Updated `.agents/memory/decisions.md` and `.agents/memory/known-gaps.md`.
+- **Phase 6 Motion System Completed** (`feature/motion-system`):
+  - Motion tokens & resolver (`web/app/src/lib/motion`): Defined pure duration/easing tokens in `tokens.ts`, runtime mode resolver in `mode.ts` (`full`, `lite`, `reduced`), and `useMotionMode` hook syncing `data-motion` attribute on `<html>` and persisted in `localStorage` under `'motion'` (`auto`, `full`, `lite`).
+  - Admin motion: Integrated `motion` 14.3.0 in lazy admin chunk, wrapped admin shell in `MotionProvider` + `AnimatePresence` route transitions, and added motion switcher in `AdminTopBar`.
+  - Viewer channel transitions: Implemented lightweight CSS/WAAPI channel-switch transition (fade, volume ramp, channel bump) and added 'N' keyboard shortcut toggle.
+  - Guardrails: Added `motionGuard.test.ts` ensuring viewer chunk remains free of the motion library, and verified no layout properties are animated.
+  - Verified: `pnpm check`, `pnpm typecheck`, `pnpm test` (74 tests), and `pnpm build` passed; real browser testing verified video playback, ArrowDown channel switching, and `full`/`lite` mode switching (halving `--dur-fast` to 60ms and disabling live pulse).
 
 
 

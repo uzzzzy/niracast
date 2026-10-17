@@ -22,7 +22,8 @@ export default defineConfig({
             id.includes('AdminPage') ||
             id.includes('features/admin') ||
             id.includes('node_modules/@dnd-kit') ||
-            id.includes('node_modules/sonner')
+            id.includes('node_modules/sonner') ||
+            id.includes('node_modules/motion')
           ) {
             return 'admin';
           }

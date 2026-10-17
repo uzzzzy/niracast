@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit3, ListMusic, Loader2, Plus, Trash2, Tv } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { api, type Channel } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
+import { DURATION, EASE } from '../../../lib/motion/tokens';
 import { ChannelModal } from '../components/ChannelModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 
@@ -215,52 +217,64 @@ export function ChannelsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {channels?.map((channel) => (
-                  <tr key={channel.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-neutral-300">
-                      #{channel.number}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-white">
-                      <div className="flex items-center gap-2">
-                        <span>{channel.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-neutral-400 hidden md:table-cell">
-                      {channel.created_at ? new Date(channel.created_at).toLocaleDateString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/admin/channels/${channel.id}`)}
-                          aria-label={t('manage_playlist')}
-                          className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-[#0A84FF]/20 hover:text-[#0A84FF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-                        >
-                          <ListMusic className="h-4 w-4" />
-                          <span className="hidden sm:inline">{t('manage_playlist')}</span>
-                        </button>
+                <AnimatePresence>
+                  {channels?.map((channel) => (
+                    <motion.tr
+                      key={channel.id}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: DURATION.normal, ease: EASE.spring }}
+                      className="hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-6 py-4 font-mono font-bold text-neutral-300">
+                        #{channel.number}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-white">
+                        <div className="flex items-center gap-2">
+                          <span>{channel.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-neutral-400 hidden md:table-cell">
+                        {channel.created_at
+                          ? new Date(channel.created_at).toLocaleDateString()
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/admin/channels/${channel.id}`)}
+                            aria-label={t('manage_playlist')}
+                            className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:bg-[#0A84FF]/20 hover:text-[#0A84FF] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                          >
+                            <ListMusic className="h-4 w-4" />
+                            <span className="hidden sm:inline">{t('manage_playlist')}</span>
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(channel)}
-                          aria-label={t('edit_channel')}
-                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(channel)}
+                            aria-label={t('edit_channel')}
+                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-white/10 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleOpenDelete(channel)}
-                          aria-label={t('delete_channel')}
-                          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDelete(channel)}
+                            aria-label={t('delete_channel')}
+                            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-xs font-medium text-neutral-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A84FF]"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
               </tbody>
             </table>
           </div>
