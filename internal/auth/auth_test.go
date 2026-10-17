@@ -288,6 +288,10 @@ func TestAccessMatrix(t *testing.T) {
 		{"Logout POST", http.MethodPost, "/api/v1/auth/logout", false},
 		{"Channel status POST", http.MethodPost, "/api/v1/channels/123/status", false},
 		{"Channel EPG POST", http.MethodPost, "/api/v1/channels/123/epg", false},
+		{"Channel schedule GET", http.MethodGet, "/api/v1/channels/123/schedule", false},
+		{"Channel schedule slots POST", http.MethodPost, "/api/v1/channels/123/schedule/slots", false},
+		{"Channel schedule slot PUT", http.MethodPut, "/api/v1/channels/123/schedule/slots/1", false},
+		{"Channel schedule slot DELETE", http.MethodDelete, "/api/v1/channels/123/schedule/slots/1", false},
 		{"Unknown API route GET", http.MethodGet, "/api/v1/unknown", false},
 	}
 

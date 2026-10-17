@@ -13,6 +13,7 @@ import (
 )
 
 type epgItemResponse struct {
+	Kind        string    `json:"kind"`
 	MediaID     int64     `json:"media_id"`
 	Title       string    `json:"title"`
 	StartAt     time.Time `json:"start_at"`
@@ -49,19 +50,31 @@ func (h *epgHandler) register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/channels/{id}/epg", h.epg)
 }
 
-func (h *epgHandler) channelExists(id int64) bool {
-	var count int
-	err := h.db.QueryRow(`SELECT COUNT(*) FROM channels WHERE id = ?`, id).Scan(&count)
-	return err == nil && count > 0
-}
-
 func (h *epgHandler) epg(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-	if err != nil || !h.channelExists(id) {
+	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "channel not found"})
 		return
+	}
+
+	var mode string
+	err = h.db.QueryRow(`SELECT mode FROM channels WHERE id = ?`, id).Scan(&mode)
+	if errors.Is(err, sql.ErrNoRows) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "channel not found"})
+		return
+	}
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "database error: " + err.Error()})
+		return
+	}
+	if mode == "" {
+		mode = "loop"
 	}
 
 	count := 5
@@ -76,11 +89,11 @@ func (h *epgHandler) epg(w http.ResponseWriter, r *http.Request) {
 		count = 20
 	}
 
-	var skipOffsetSec float64
-	if h.supervisor != nil {
-		skipOffsetSec = h.supervisor.Status(id).SkipOffsetSec
+	var skipOffset time.Duration
+	if mode != "scheduled" && h.supervisor != nil {
+		skipOffsetSec := h.supervisor.Status(id).SkipOffsetSec
+		skipOffset = time.Duration(skipOffsetSec * float64(time.Second))
 	}
-	skipOffset := time.Duration(skipOffsetSec * float64(time.Second))
 
 	wallNow := time.Now().UTC()
 	logicalNow := wallNow.Add(skipOffset)
@@ -103,9 +116,21 @@ func (h *epgHandler) epg(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isIdle := false
+	if len(items) == 0 {
+		isIdle = true
+	} else if mode == "scheduled" && items[0].Kind == "slate" {
+		isIdle = true
+	}
+
 	respItems := make([]epgItemResponse, len(items))
 	for i, it := range items {
+		kind := it.Kind
+		if kind == "" {
+			kind = "programme"
+		}
 		respItems[i] = epgItemResponse{
+			Kind:        kind,
 			MediaID:     it.MediaID,
 			Title:       it.Title,
 			StartAt:     it.StartAt.Add(-skipOffset),
@@ -119,7 +144,7 @@ func (h *epgHandler) epg(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(epgResponse{
 		ChannelID:   id,
 		GeneratedAt: wallNow,
-		Idle:        false,
+		Idle:        isIdle,
 		Items:       respItems,
 	})
 }

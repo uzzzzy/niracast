@@ -58,6 +58,9 @@ var AccessMatrix = []AccessRule{
 	{Pattern: "/api/v1/media/scan-status", Methods: []string{"GET", "HEAD"}, Protected: true, Comment: "Media scan status"},
 	{Pattern: "/api/v1/system", Methods: []string{"GET", "HEAD"}, Protected: true, Comment: "System info"},
 	{Pattern: "/api/v1/events", Methods: []string{"GET"}, Protected: true, Comment: "SSE events"},
+	{Pattern: "/api/v1/channels/{id}/schedule", Methods: []string{"GET"}, Protected: true, Comment: "Get channel schedule"},
+	{Pattern: "/api/v1/channels/{id}/schedule/slots", Methods: []string{"POST"}, Protected: true, Comment: "Create schedule slot"},
+	{Pattern: "/api/v1/channels/{id}/schedule/slots/{slotId}", Methods: []string{"PUT", "DELETE"}, Protected: true, Comment: "Update / delete schedule slot"},
 }
 
 // IsPublic evaluates whether the incoming request matches public routes that require no auth.

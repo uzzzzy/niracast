@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata"
 
 	"tv-stream/internal/api"
 	"tv-stream/internal/auth"
@@ -67,7 +70,13 @@ func main() {
 		log.Printf("idle clip ready: %s", idleClip)
 	}
 
-	calc := timeline.NewDBCalculator(conn)
+	tzName := env("TIMEZONE", "Asia/Jakarta")
+	loc, err := time.LoadLocation(tzName)
+	if err != nil {
+		log.Fatalf("load timezone %q: %v", tzName, err)
+	}
+
+	calc := timeline.NewDBCalculator(conn, loc)
 	supervisor := stream.NewSupervisor(
 		calc,
 		ctrl,
@@ -76,6 +85,20 @@ func main() {
 		idleClip,
 		transcodeDir+"/channels",
 	)
+	supervisor.SetModeLookup(func(channelID int64) (string, error) {
+		var mode string
+		err := conn.QueryRow(`SELECT mode FROM channels WHERE id = ?`, channelID).Scan(&mode)
+		if errors.Is(err, sql.ErrNoRows) {
+			return "loop", nil
+		}
+		if err != nil {
+			return "", err
+		}
+		if mode == "" {
+			mode = "loop"
+		}
+		return mode, nil
+	})
 
 	hub := events.NewHub()
 	supervisor.SetPublisher(hub)
@@ -92,7 +115,7 @@ func main() {
 
 	statusH := newStatusHandler(conn, supervisor, hub)
 	epgH := newEPGHandler(conn, supervisor, calc)
-	systemH := newSystemHandler(conn, supervisor, mediaScanner, startTime, ffmpegPath, idleClip)
+	systemH := newSystemHandler(conn, supervisor, mediaScanner, startTime, ffmpegPath, idleClip, tzName)
 
 	adminPassword := os.Getenv("ADMIN_PASSWORD")
 	if adminPassword == "" {
@@ -116,7 +139,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	api.NewChannelHandler(conn, supervisor).Register(mux)
-	feed.NewHandler(conn).Register(mux)
+	api.NewScheduleHandler(conn, supervisor, loc).Register(mux)
+	feed.NewHandler(conn, calc).Register(mux)
 	authHandler.Register(mux)
 	statusH.register(mux)
 	epgH.register(mux)

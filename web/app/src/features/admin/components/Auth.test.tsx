@@ -77,7 +77,7 @@ describe('Admin Auth Flow', () => {
       csrf: 'token-abc',
     });
     vi.spyOn(api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 1, name: 'Channel 1', created_at: '2026-01-01' },
+      { id: 1, number: 1, name: 'Channel 1', mode: 'loop', created_at: '2026-01-01' },
     ]);
     vi.spyOn(api, 'getSystemInfo').mockResolvedValue({
       uptime_sec: 100,

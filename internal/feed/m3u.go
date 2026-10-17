@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"tv-stream/internal/models"
+	"tv-stream/internal/timeline"
 )
 
 // Handler serves the IPTV feed endpoints.
 type Handler struct {
-	DB  *sql.DB
-	Now func() time.Time // injectable clock; defaults to time.Now
+	DB   *sql.DB
+	Calc *timeline.Calculator
+	Now  func() time.Time // injectable clock; defaults to time.Now
 
 	mu       sync.Mutex
 	epgCache []byte
@@ -23,7 +25,13 @@ type Handler struct {
 }
 
 // NewHandler builds a feed Handler.
-func NewHandler(db *sql.DB) *Handler { return &Handler{DB: db, Now: time.Now} }
+func NewHandler(db *sql.DB, calc ...*timeline.Calculator) *Handler {
+	var c *timeline.Calculator
+	if len(calc) > 0 {
+		c = calc[0]
+	}
+	return &Handler{DB: db, Calc: c, Now: time.Now}
+}
 
 // Register mounts the feed routes on mux.
 func (h *Handler) Register(mux *http.ServeMux) {

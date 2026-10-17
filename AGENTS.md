@@ -30,6 +30,7 @@ cd web/app && pnpm build       # Build production SPA bundle
 ## Environment Variables
 - `ADMIN_PASSWORD`: Admin authentication password (empty = random password logged once on startup).
 - `SESSION_SECRET`: Secret key for HMAC cookie signing (empty = random per process, sessions reset on restart).
+- `TIMEZONE`: Server timezone for scheduled broadcasting (default `Asia/Jakarta`).
 
 ## Git Flow
 This repository follows Git Flow (`main`, `develop`, `feature/*`, `fix/*`, `release/*`, `hotfix/*`). See [docs/GIT_FLOW.md](docs/GIT_FLOW.md).

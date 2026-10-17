@@ -555,3 +555,221 @@ func TestSupervisor_StopStreamAndRunningCount(t *testing.T) {
 		t.Errorf("expected Status.State = 'stopped', got %q", st.State)
 	}
 }
+
+// TestSupervisor_GapToRealAtNextStartWithoutPollWait verifies that when in a gap,
+// the supervisor uses the idle clip and switches to the real item exactly when NextStart arrives,
+// without waiting for the 5 s idle poll interval.
+func TestSupervisor_GapToRealAtNextStartWithoutPollWait(t *testing.T) {
+	ctrl := newFakeController()
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	idleClip := "idle.mp4"
+	realFile := makeTempFile(t, "gap_real.mp4")
+
+	nextStart := time.Now().Add(60 * time.Millisecond)
+
+	var mu sync.Mutex
+	callCount := 0
+	resolver := &customPlayoutFunc{
+		playoutFunc: func(_ int64, _ time.Time) (*timeline.PlayoutItem, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			callCount++
+			if time.Now().Before(nextStart) {
+				return &timeline.PlayoutItem{
+					Gap:          true,
+					NextStart:    nextStart,
+					RemainingSec: time.Until(nextStart).Seconds(),
+				}, nil
+			}
+			return &timeline.PlayoutItem{
+				MediaID:      99,
+				FilePath:     realFile,
+				RemainingSec: 30,
+			}, nil
+		},
+	}
+
+	sv := NewSupervisor(resolver, ctrl, active, noopCodec, idleClip, t.TempDir())
+	sv.idlePollInterval = 5 * time.Second // 5 seconds poll
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sv.Ensure(ctx, 80)
+
+	// Wait for idle start.
+	if !waitCond(t, 2*time.Second, func() bool { return ctrl.startCount() >= 1 }) {
+		t.Fatal("idle start not called")
+	}
+	cfg1, _ := ctrl.lastConfig()
+	if cfg1.SourcePath != idleClip {
+		t.Fatalf("first start SourcePath = %q, want %q", cfg1.SourcePath, idleClip)
+	}
+
+	// Must switch to real item shortly after NextStart (< 1s, way before 5s poll).
+	if !waitCond(t, 1*time.Second, func() bool { return ctrl.startCount() >= 2 }) {
+		t.Fatal("switch to real item at NextStart did not trigger within 1s")
+	}
+	cfg2, _ := ctrl.lastConfig()
+	if cfg2.SourcePath != realFile {
+		t.Fatalf("second start SourcePath = %q, want %q", cfg2.SourcePath, realFile)
+	}
+}
+
+// TestSupervisor_StopAfterSecCutsRunningItemWithoutPenalty verifies that in scheduled mode,
+// StopAfterSec cuts the running item and advances without fast-failure penalty.
+func TestSupervisor_StopAfterSecCutsRunningItemWithoutPenalty(t *testing.T) {
+	ctrl := newFakeController()
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	realFile1 := makeTempFile(t, "cut1.mp4")
+	realFile2 := makeTempFile(t, "cut2.mp4")
+
+	var mu sync.Mutex
+	itemIdx := 0
+	resolver := &customPlayoutFunc{
+		playoutFunc: func(_ int64, _ time.Time) (*timeline.PlayoutItem, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			if itemIdx == 0 {
+				itemIdx++
+				return &timeline.PlayoutItem{
+					MediaID:      1,
+					FilePath:     realFile1,
+					StopAfterSec: 0.05, // 50ms cutoff
+					RemainingSec: 30,
+				}, nil
+			}
+			return &timeline.PlayoutItem{
+				MediaID:      2,
+				FilePath:     realFile2,
+				StopAfterSec: 0.05,
+				RemainingSec: 30,
+			}, nil
+		},
+	}
+
+	sv := NewSupervisor(resolver, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sv.Ensure(ctx, 81)
+
+	// Stream 1 starts, cuts off after 50ms, and stream 2 starts without 2s backoff delay.
+	if !waitCond(t, 1*time.Second, func() bool { return ctrl.startCount() >= 2 }) {
+		t.Fatal("item 2 did not start within 1s (fast-failure backoff may have fired)")
+	}
+
+	cfg2, _ := ctrl.lastConfig()
+	if cfg2.SourcePath != realFile2 {
+		t.Errorf("second start SourcePath = %q, want %q", cfg2.SourcePath, realFile2)
+	}
+}
+
+// TestSupervisor_ReloadRestartsResolution verifies that Reload terminates the current
+// process and immediately resolves playout anew.
+func TestSupervisor_ReloadRestartsResolution(t *testing.T) {
+	ctrl := newFakeController()
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	realFile1 := makeTempFile(t, "rel1.mp4")
+	realFile2 := makeTempFile(t, "rel2.mp4")
+
+	resolver := &fakeResolver{
+		items: []timeline.PlayoutItem{
+			{MediaID: 1, FilePath: realFile1, RemainingSec: 60},
+		},
+	}
+
+	sv := NewSupervisor(resolver, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sv.Ensure(ctx, 82)
+
+	if !waitCond(t, 2*time.Second, func() bool { return ctrl.startCount() >= 1 }) {
+		t.Fatal("first start not called")
+	}
+
+	// Change resolver to item 2 and call Reload
+	resolver.setItems([]timeline.PlayoutItem{
+		{MediaID: 2, FilePath: realFile2, RemainingSec: 60},
+	})
+
+	sv.Reload(82)
+
+	if !waitCond(t, 2*time.Second, func() bool { return ctrl.startCount() >= 2 }) {
+		t.Fatal("reload did not trigger new start")
+	}
+
+	cfg2, _ := ctrl.lastConfig()
+	if cfg2.SourcePath != realFile2 {
+		t.Errorf("reloaded start SourcePath = %q, want %q", cfg2.SourcePath, realFile2)
+	}
+
+	// Reload on unstarted channel is a safe no-op
+	sv.Reload(9999)
+}
+
+// TestSupervisor_SkipReturnsErrSkipUnavailableInScheduledMode verifies that Skip
+// returns ErrSkipUnavailable in scheduled mode and works in loop mode.
+func TestSupervisor_SkipReturnsErrSkipUnavailableInScheduledMode(t *testing.T) {
+	ctrl := newFakeController()
+	active := &fakeActive{}
+	active.active.Store(true)
+
+	realFile := makeTempFile(t, "skip_sched.mp4")
+	tRes := &timelineResolver{
+		items: []timeline.Item{
+			{MediaID: 10, FilePath: realFile, Duration: 60},
+		},
+	}
+
+	sv := NewSupervisor(tRes, ctrl, active, noopCodec, "idle.mp4", t.TempDir())
+
+	currentMode := "scheduled"
+	sv.SetModeLookup(func(_ int64) (string, error) {
+		return currentMode, nil
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sv.Ensure(ctx, 83)
+
+	if !waitCond(t, 2*time.Second, func() bool {
+		return sv.Status(83).State == "playing"
+	}) {
+		t.Fatal("channel did not enter playing state")
+	}
+
+	// 1. In scheduled mode, Skip returns ErrSkipUnavailable
+	_, err := sv.Skip(83)
+	if !errors.Is(err, ErrSkipUnavailable) {
+		t.Fatalf("Skip in scheduled mode: got %v, want %v", err, ErrSkipUnavailable)
+	}
+
+	// 2. In loop mode, Skip succeeds
+	currentMode = "loop"
+	st, err := sv.Skip(83)
+	if err != nil {
+		t.Fatalf("Skip in loop mode returned unexpected error: %v", err)
+	}
+	if st.SkipOffsetSec <= 0 {
+		t.Errorf("SkipOffsetSec = %f, want > 0", st.SkipOffsetSec)
+	}
+}
+
+type customPlayoutFunc struct {
+	playoutFunc func(channelID int64, now time.Time) (*timeline.PlayoutItem, error)
+}
+
+func (c *customPlayoutFunc) GetCurrentPlayout(channelID int64, now time.Time) (*timeline.PlayoutItem, error) {
+	return c.playoutFunc(channelID, now)
+}

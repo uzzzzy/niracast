@@ -234,6 +234,9 @@ func TestSystemEndpoint_ShapeAndIdleClip(t *testing.T) {
 	if resp1.RunningChannels != 4 {
 		t.Errorf("running_channels = %d, want 4", resp1.RunningChannels)
 	}
+	if resp1.Timezone != "Asia/Jakarta" {
+		t.Errorf("timezone = %q, want 'Asia/Jakarta'", resp1.Timezone)
+	}
 	if resp1.FFmpeg.Path != "ffmpeg" || resp1.FFmpeg.Version != "ffmpeg version 7.0-test" {
 		t.Errorf("ffmpeg = %+v, want path=ffmpeg version=ffmpeg version 7.0-test", resp1.FFmpeg)
 	}

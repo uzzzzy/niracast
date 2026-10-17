@@ -62,13 +62,16 @@
 | 7 | `feature/tv-ui` | 10-foot viewing interface, spatial D-pad remote navigation, oversized typography, and high-contrast focus rings. | **DONE**: In-house zero-dependency spatial nav, remote key map (Tizen/webOS/Android TV), TV channel rail, numeric direct jump, volume persistence, and TV profile detection verified. |
 | 8 | `feature/mobile-ui` | Responsive layout adaptations, touch gesture controls, bottom drawer navigation, and mobile viewport polish. | **DONE**: Mobile profile detection (`?ui=mobile`), pure swipe gesture engine, bottom sheets for channels and EPG, mobile admin navigation bar, responsive stacked tables, and touch drag sensor for playlist reordering verified. All roadmap phases 1-8 complete. |
 | — | UI revamp: Control Room Glass | "Control Room Glass" design system (`docs/DESIGN.md`): semantic tokens, Apple-style materials, dark/light themes, shared UI primitives (`web/app/src/components/ui/`), desktop glass blur with solid fallbacks, WebP assets, server idle frame update, and bundle chunk isolation. | **DONE**: Design system fully implemented; semantic tokens, dark/light themes with pre-paint script (`theme.ts`), shared UI primitives, desktop blur with solid fallbacks, 13 WebP assets, server idle frame rebuilt, token guards, timecode formatter, and Vite bundle isolation (pinned `hls.js`) verified across test suites (205 tests) and real browser checks. |
+| F1 | `feature/scheduled-broadcast` | Scheduled TV broadcast programming (`loop` vs `scheduled`), slot expansion with daily/weekly recurrence in server timezone, idle slate fallback in gaps, XMLTV/M3U EPG feed generation, and visual planner. | **DONE**: Channel plays scheduled media on clock time and idle slate in gaps without manual intervention; recurrence, conflict detection (409), EPG/XMLTV, and timeline planner verified. |
 
 
 ## Future Plan (not yet scheduled)
 
-**Priority overview**: F3 normal (before any public/internet exposure), F1/F2 as already suggested, F4 low (explicitly deprioritised).
+**Priority overview**: F3 normal (before any public/internet exposure), F2 next (playout & audience metrics), F4 low (explicitly deprioritised).
 
-### F1: Scheduled broadcast (TV-style programming)
+### F1: Scheduled broadcast (TV-style programming) — DELIVERED
+- **Status**: **DELIVERED (2026-10-17)** on branch `feature/scheduled-broadcast`.
+- **Delivered Summary**: Implemented dual channel modes (`loop` vs `scheduled`), SQLite schema v2 (`playlist_items`, `schedule_slots`), timeline recurrence expansion (`none`/`daily`/`weekly`) calculated in server timezone (`TIMEZONE`, default `Asia/Jakarta`, DST-safe), overrun truncation at slot end, idle slate gap filling (`siaran_segera_kembali.jpg`), supervisor reload on schedule edits, skip disabled in scheduled mode (HTTP 409), XMLTV/M3U feeds with `programme`/`slate` kinds, slot conflict detection (HTTP 409), and React 19 CMS schedule planner timeline with drag-and-drop slot creation/editing.
 - **Goal**: Enable clock-time broadcast programming alongside loop playback. Today a channel is a 24/7 wall-clock loop of its playlist (`now mod total playlist duration`) with no clock times; the `schedules` table already has `start_time`/`duration_sec` columns that are unused by the resolver.
 - **Scope**:
   - Per-channel mode: `"loop"` (current behaviour) or `"scheduled"`.
@@ -114,12 +117,12 @@
   - HLS AES-128 encryption with a key endpoint that requires a valid token.
   - Visible or forensic watermark per session (FFmpeg overlay or burned session ID, which needs transcoding and gives up the zero-CPU copy path).
   - Shorter-lived tokens.
-- **Dependencies**: F3 tokens.
+  - Dependencies: F3 tokens.
 - **Risks / Unverified**: Watermarking and on-the-fly re-encoding sacrifice zero-CPU copy performance; keys delivered to client players can be captured by determined actors; older IPTV device compatibility with encrypted HLS.
 - **Done criterion**: Defined at implementation time; do not start before F3.
 
 ### Suggested order
-After Phase 8 or interleaved after Phase 5: F3 before any public/internet exposure; F1 then F2 (or F2 first if monitoring matters more); F4 low (user-deprioritised). All proposals to be confirmed by the user.
+After Phase 8 / F1: F3 before any public/internet exposure; followed by F2 for monitoring; F4 low (user-deprioritised). All proposals to be confirmed by the user.
 
 ## Open & Unverified Questions
 - **Unverified:** Manifest discontinuity behavior: Verify player stability across `#EXT-X-DISCONTINUITY` boundaries during live transcode-copy switching on Safari and Smart TVs.

@@ -98,7 +98,15 @@ export const ProgramGuideSheet: React.FC<ProgramGuideSheetProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-fg">{item.title}</span>
+                      <span
+                        className={
+                          item.kind === 'slate'
+                            ? 'text-sm text-fg-subtle'
+                            : 'text-sm font-medium text-fg'
+                        }
+                      >
+                        {item.title}
+                      </span>
                       {item.is_current && (
                         <span className="rounded-full bg-live/15 px-2 py-0.5 text-[11px] font-semibold text-live border border-live/30">
                           {t('now')}

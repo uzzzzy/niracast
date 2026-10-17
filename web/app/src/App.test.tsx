@@ -38,12 +38,19 @@ describe('App routing', () => {
 
   it('renders viewer page with channel name and now playing item', async () => {
     vi.spyOn(apiModule.api, 'getChannels').mockResolvedValue([
-      { id: 1, number: 101, name: 'Retro Cinema', created_at: '2026-01-01T00:00:00Z' },
+      {
+        id: 1,
+        number: 101,
+        name: 'Retro Cinema',
+        mode: 'loop',
+        created_at: '2026-01-01T00:00:00Z',
+      },
     ]);
     vi.spyOn(apiModule.api, 'getChannel').mockResolvedValue({
       id: 1,
       number: 101,
       name: 'Retro Cinema',
+      mode: 'loop',
       created_at: '2026-01-01T00:00:00Z',
     });
     vi.spyOn(apiModule.api, 'getChannelStatus').mockResolvedValue({

@@ -110,6 +110,12 @@ func (h *statusHandler) skip(w http.ResponseWriter, r *http.Request) {
 
 	cs, err := h.supervisor.Skip(id)
 	if err != nil {
+		if errors.Is(err, stream.ErrSkipUnavailable) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusConflict)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "skip_unavailable"})
+			return
+		}
 		if errors.Is(err, stream.ErrNotPlaying) || errors.Is(err, stream.ErrNotRunning) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusConflict)

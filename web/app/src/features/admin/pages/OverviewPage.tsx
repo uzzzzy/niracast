@@ -156,8 +156,11 @@ function ChannelMonitorCard({
             size="sm"
             variant="secondary"
             onClick={handleSkip}
-            disabled={!isPlaying || isSkipping}
-            aria-label={t('skip_button')}
+            disabled={!isPlaying || isSkipping || channel.mode === 'scheduled'}
+            title={channel.mode === 'scheduled' ? t('skip_unavailable_scheduled') : undefined}
+            aria-label={
+              channel.mode === 'scheduled' ? t('skip_unavailable_scheduled') : t('skip_button')
+            }
           >
             {isSkipping ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />

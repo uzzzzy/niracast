@@ -108,6 +108,7 @@ This file is the source of truth for tokens, materials and component rules. Code
 | `ThemeToggle` | `compact?` | `SegmentedControl` of system/light/dark with lucide `Monitor`/`Sun`/`Moon` icons and i18n labels |
 | `EmptyState` | `art?: string`, `title`, `description?`, `action?` | art is a 160px rounded-card image with a soft mask fade at the bottom |
 | `ChannelArt` | `channelId: number`, `src?`, `className`, `children` | `src`, or a placeholder picked by `channelId % 3`; CSS background with `bg-cover`; children overlay it |
+| `ScheduleTimeline` | `occurrences`, `view`, `anchor`, `timezone`, `onCreate`, `onSelect`, `onMove` | 24h vertical grid (60px/hr), day/week columns, 5-min snap, drag & keyboard move |
 
 - `AmbientBackground` lives in `src/features/admin/components/` so the wallpapers load only in the admin chunk.
   - It is a fixed, full-screen, `aria-hidden`, `pointer-events-none` layer.

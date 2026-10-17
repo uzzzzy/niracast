@@ -1,14 +1,14 @@
 import { AlertCircle, Loader2, X } from 'lucide-react';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Button, Field, Input } from '../../../components/ui';
+import { Button, Field, Input, SegmentedControl } from '../../../components/ui';
 import { ApiError, type Channel } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 
 interface ChannelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { number: number; name: string }) => Promise<void>;
+  onSubmit: (data: { number: number; name: string; mode?: 'loop' | 'scheduled' }) => Promise<void>;
   channelToEdit?: Channel | null;
 }
 
@@ -18,6 +18,7 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
 
   const [numberVal, setNumberVal] = useState<string>('');
   const [nameVal, setNameVal] = useState<string>('');
+  const [modeVal, setModeVal] = useState<'loop' | 'scheduled'>('loop');
   const [inlineError, setInlineError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,9 +26,11 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
     if (channelToEdit) {
       setNumberVal(channelToEdit.number.toString());
       setNameVal(channelToEdit.name);
+      setModeVal(channelToEdit.mode || 'loop');
     } else {
       setNumberVal('');
       setNameVal('');
+      setModeVal('loop');
     }
     setInlineError(null);
   }, [channelToEdit]);
@@ -65,7 +68,7 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
 
     setIsSubmitting(true);
     try {
-      await onSubmit({ number: num, name: trimmedName });
+      await onSubmit({ number: num, name: trimmedName, mode: modeVal });
       onClose();
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 409) {
@@ -129,6 +132,18 @@ export function ChannelModal({ isOpen, onClose, onSubmit, channelToEdit }: Chann
             onChange={(e) => setNameVal(e.target.value)}
             placeholder={t('channel_name_placeholder')}
             required
+          />
+        </Field>
+
+        <Field label={t('channel_mode')}>
+          <SegmentedControl
+            options={[
+              { value: 'loop', label: t('mode_loop') },
+              { value: 'scheduled', label: t('mode_scheduled') },
+            ]}
+            value={modeVal}
+            onChange={(v) => setModeVal(v as 'loop' | 'scheduled')}
+            ariaLabel={t('channel_mode')}
           />
         </Field>
 

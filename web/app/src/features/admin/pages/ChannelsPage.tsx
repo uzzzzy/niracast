@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit3, ListMusic, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Edit3, ListMusic, Loader2, Plus, Trash2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import emptyChannels from '../../../assets/empty-channels.webp';
-import { Button, Card, EmptyState } from '../../../components/ui';
+import { Button, Card, EmptyState, StatusPill } from '../../../components/ui';
 import { api, type Channel } from '../../../lib/api';
 import { useTranslation } from '../../../lib/i18n';
 import { DURATION, EASE } from '../../../lib/motion/tokens';
@@ -35,7 +35,8 @@ export function ChannelsPage() {
 
   // Create Channel Mutation with Optimistic Update
   const createMutation = useMutation({
-    mutationFn: (data: { number: number; name: string }) => api.createChannel(data),
+    mutationFn: (data: { number: number; name: string; mode?: 'loop' | 'scheduled' }) =>
+      api.createChannel(data),
     onMutate: async (newChan) => {
       await queryClient.cancelQueries({ queryKey: ['admin-channels'] });
       const previousChannels = queryClient.getQueryData<Channel[]>(['admin-channels']);
@@ -44,6 +45,7 @@ export function ChannelsPage() {
           id: Date.now(),
           number: newChan.number,
           name: newChan.name,
+          mode: newChan.mode || 'loop',
           created_at: new Date().toISOString(),
         };
         queryClient.setQueryData<Channel[]>(['admin-channels'], [...previousChannels, optimistic]);
@@ -65,8 +67,13 @@ export function ChannelsPage() {
 
   // Edit Channel Mutation with Optimistic Update
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { number: number; name: string } }) =>
-      api.updateChannel(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { number: number; name: string; mode?: 'loop' | 'scheduled' };
+    }) => api.updateChannel(id, data),
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey: ['admin-channels'] });
       const previousChannels = queryClient.getQueryData<Channel[]>(['admin-channels']);
@@ -136,7 +143,11 @@ export function ChannelsPage() {
     setIsDeleteOpen(true);
   };
 
-  const handleModalSubmit = async (data: { number: number; name: string }) => {
+  const handleModalSubmit = async (data: {
+    number: number;
+    name: string;
+    mode?: 'loop' | 'scheduled';
+  }) => {
     if (channelToEdit) {
       await updateMutation.mutateAsync({ id: channelToEdit.id, data });
     } else {
@@ -233,7 +244,16 @@ export function ChannelsPage() {
                         </span>
                       </td>
                       <td className="block md:table-cell px-0 py-1 md:px-5 md:py-3.5 font-medium text-fg">
-                        <span className="text-sm font-semibold md:font-medium">{channel.name}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold md:font-medium">
+                            {channel.name}
+                          </span>
+                          {channel.mode === 'scheduled' ? (
+                            <StatusPill status="live">{t('mode_scheduled')}</StatusPill>
+                          ) : (
+                            <StatusPill status="idle">{t('mode_loop')}</StatusPill>
+                          )}
+                        </div>
                       </td>
                       <td className="block md:table-cell px-0 py-1 md:px-5 md:py-3.5 text-xs text-fg-muted">
                         <span className="md:hidden text-fg-subtle font-sans text-[11px] mr-1">
@@ -247,16 +267,29 @@ export function ChannelsPage() {
                       </td>
                       <td className="block md:table-cell px-0 pt-3 pb-1 md:px-5 md:py-3.5 text-right border-t border-hairline md:border-t-0 mt-2 md:mt-0">
                         <div className="flex items-center justify-end gap-1.5 flex-wrap sm:flex-nowrap">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => navigate(`/admin/channels/${channel.id}`)}
-                            aria-label={t('manage_playlist')}
-                            className="flex-1 sm:flex-initial"
-                          >
-                            <ListMusic className="h-4 w-4 mr-1.5" />
-                            <span>{t('manage_playlist')}</span>
-                          </Button>
+                          {channel.mode === 'scheduled' ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => navigate(`/admin/channels/${channel.id}/schedule`)}
+                              aria-label={t('manage_schedule')}
+                              className="flex-1 sm:flex-initial"
+                            >
+                              <Calendar className="h-4 w-4 mr-1.5" />
+                              <span>{t('manage_schedule')}</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => navigate(`/admin/channels/${channel.id}`)}
+                              aria-label={t('manage_playlist')}
+                              className="flex-1 sm:flex-initial"
+                            >
+                              <ListMusic className="h-4 w-4 mr-1.5" />
+                              <span>{t('manage_playlist')}</span>
+                            </Button>
+                          )}
 
                           <Button
                             size="sm"
